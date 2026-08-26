@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { LayoutDashboard, BookOpen, Users, BarChart3 } from "lucide-react";
+import { LayoutDashboard, BookOpen, Map, Users, BarChart3 } from "lucide-react";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import Sidebar from "@/design-system/organisms/Sidebar";
 
 const ITEMS = [
   { href: "/admin", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-  { href: "/admin/cursos", label: "Cursos e trilhas", icon: <BookOpen size={18} /> },
+  { href: "/admin/cursos", label: "Cursos", icon: <BookOpen size={18} /> },
+  { href: "/admin/trilhas", label: "Trilhas", icon: <Map size={18} /> },
   { href: "/admin/usuarios", label: "Usuários e turmas", icon: <Users size={18} /> },
   { href: "/admin/relatorios", label: "Relatórios", icon: <BarChart3 size={18} /> },
 ];
