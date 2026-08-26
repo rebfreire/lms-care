@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, FileText, ListChecks } from "lucide-react";
+import { CheckCircle2, FileText, ListChecks, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
@@ -31,7 +31,18 @@ export default async function CursoDetalhePage({
 
   return (
     <div>
-      <PageHeader title={curso.nome} description={curso.descricao ?? undefined} />
+      <PageHeader
+        title={curso.nome}
+        description={curso.descricao ?? undefined}
+        actions={
+          <Link
+            href={`/admin/cursos/${curso.id}/editar`}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-primary"
+          >
+            <Pencil size={16} /> Editar curso
+          </Link>
+        }
+      />
 
       <div className="space-y-6">
         {modulos?.map((modulo) => (
@@ -57,6 +68,12 @@ export default async function CursoDetalhePage({
                     ) : (
                       <VideoUploader aulaId={aula.id} cursoId={curso.id} />
                     )}
+                    <Link
+                      href={`/admin/cursos/${curso.id}/aulas/${aula.id}/editar`}
+                      className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant bg-surface-container-high px-2 py-1 rounded-pill flex items-center gap-1 flex-shrink-0 hover:text-primary"
+                    >
+                      <Pencil size={12} /> editar
+                    </Link>
                     <Link
                       href={`/admin/cursos/${curso.id}/aulas/${aula.id}/quiz`}
                       className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant bg-surface-container-high px-2 py-1 rounded-pill flex items-center gap-1 flex-shrink-0 hover:text-primary"

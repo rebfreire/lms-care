@@ -6,6 +6,7 @@ import Button from "@/design-system/atoms/Button";
 import FormField from "@/design-system/molecules/FormField";
 import { criarQuiz, removerQuestao } from "./actions";
 import NovaQuestaoForm from "./NovaQuestaoForm";
+import EditarQuizConfigForm from "./EditarQuizConfigForm";
 
 export default async function QuizAulaPage({
   params,
@@ -74,6 +75,15 @@ export default async function QuizAulaPage({
       <PageHeader
         title={quiz.nome}
         description={`${aula.titulo} — nota de corte ${quiz.nota_corte}% · ${quiz.tentativas_permitidas} tentativa(s)`}
+      />
+
+      <EditarQuizConfigForm
+        quizId={quiz.id}
+        cursoId={cursoId}
+        aulaId={aulaId}
+        nomeAtual={quiz.nome}
+        notaCorteAtual={quiz.nota_corte}
+        tentativasAtual={quiz.tentativas_permitidas}
       />
 
       <div className="space-y-4 mb-6">

@@ -27,6 +27,51 @@ export async function criarCurso(_prevState: string | null, formData: FormData) 
   redirect(`/admin/cursos/${data.id}`);
 }
 
+export async function editarCurso(cursoId: string, _prevState: string | null, formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  const descricao = String(formData.get("descricao") ?? "").trim();
+  if (!nome) return "Nome do curso é obrigatório.";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("cursos")
+    .update({ nome, descricao })
+    .eq("id", cursoId);
+
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
+  redirect(`/admin/cursos/${cursoId}`);
+}
+
+export async function editarAula(
+  cursoId: string,
+  aulaId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  const textoApoio = String(formData.get("texto_apoio") ?? "").trim();
+  if (!titulo) return "Título é obrigatório.";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("aulas")
+    .update({ titulo, texto_apoio: textoApoio || null })
+    .eq("id", aulaId);
+
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
+  redirect(`/admin/cursos/${cursoId}`);
+}
+
 export async function criarModulo(cursoId: string, formData: FormData) {
   const nome = String(formData.get("nome") ?? "").trim();
   if (!nome) return;

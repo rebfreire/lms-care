@@ -24,6 +24,33 @@ export async function criarQuiz(aulaId: string, cursoId: string, formData: FormD
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/quiz`);
 }
 
+export async function atualizarQuizConfig(
+  quizId: string,
+  cursoId: string,
+  aulaId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  const notaCorte = Number(formData.get("nota_corte") ?? 70);
+  const tentativas = Number(formData.get("tentativas_permitidas") ?? 3);
+  if (!nome) return "Nome é obrigatório.";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quizzes")
+    .update({ nome, nota_corte: notaCorte, tentativas_permitidas: tentativas })
+    .eq("id", quizId);
+
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/quiz`);
+  return null;
+}
+
 export async function criarQuestao(
   quizId: string,
   cursoId: string,
@@ -32,11 +59,13 @@ export async function criarQuestao(
 ) {
   const enunciado = String(formData.get("enunciado") ?? "").trim();
   const corretaIndex = Number(formData.get("correta") ?? -1);
-  const alternativas = [0, 1, 2, 3]
-    .map((i) => String(formData.get(`alternativa_${i}`) ?? "").trim())
-    .filter((texto) => texto.length > 0);
+  // Não filtra vazios aqui: o form garante todas as alternativas visíveis
+  // preenchidas, e o índice de "correta" precisa bater com a posição no array.
+  const alternativas = formData.getAll("alternativa").map((v) => String(v).trim());
 
-  if (!enunciado || alternativas.length < 2 || corretaIndex < 0) return;
+  if (!enunciado || alternativas.length < 2 || alternativas.some((a) => !a) || corretaIndex < 0) {
+    return;
+  }
 
   const supabase = await createClient();
 
