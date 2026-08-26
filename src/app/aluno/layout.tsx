@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Compass, GraduationCap } from "lucide-react";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
+import { getEmpresaBranding } from "@/lib/empresa";
 import Sidebar from "@/design-system/organisms/Sidebar";
 
 const ITEMS = [
@@ -15,9 +16,20 @@ export default async function AlunoLayout({ children }: { children: ReactNode })
   if (!usuario) redirect("/login");
   // admin também pode visualizar a área do aluno (modo preview), aluno não entra no admin.
 
+  const empresa = await getEmpresaBranding(usuario.empresaId);
+
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar items={ITEMS} brandSubtitle="Minha área" usuarioNome={usuario.nome} />
+      {empresa?.corPrimaria && (
+        <style>{`:root { --primary: ${empresa.corPrimaria}; }`}</style>
+      )}
+      <Sidebar
+        items={ITEMS}
+        brandName={empresa?.nome}
+        brandLogoUrl={empresa?.logoUrl}
+        brandSubtitle="Minha área"
+        usuarioNome={usuario.nome}
+      />
       <div className="pl-[17.5rem] pr-6 py-8">{children}</div>
     </div>
   );
