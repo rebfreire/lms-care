@@ -6,10 +6,13 @@
 // Aponta por padrão para a pasta original do cliente (fora do repo) — os
 // vídeos nunca ficam duplicados dentro do projeto.
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, createReadStream } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import * as tus from "tus-js-client";
+
+const LIMITE_UPLOAD_SIMPLES = 190 * 1024 * 1024; // Cloudflare aceita POST único só até ~200MB
 
 function carregarEnvLocal() {
   const envPath = path.resolve(process.cwd(), ".env.local");
@@ -111,7 +114,7 @@ async function criarUploadCloudflare() {
   return json.result;
 }
 
-async function subirVideo(filePath, uploadURL) {
+async function subirVideoSimples(filePath, uploadURL) {
   const buffer = await readFile(filePath);
   const blob = new Blob([buffer]);
   const formData = new FormData();
@@ -119,6 +122,53 @@ async function subirVideo(filePath, uploadURL) {
 
   const res = await fetch(uploadURL, { method: "POST", body: formData });
   if (!res.ok) throw new Error(`Upload falhou (${res.status}) para ${filePath}`);
+}
+
+// Arquivos grandes precisam do fluxo TUS autenticado direto na Cloudflare
+// (não dá pra retomar por HEAD a partir da uploadURL de direct_upload) — esse
+// fluxo cria o vídeo e faz o upload em pedaços na mesma chamada, e devolve o
+// uid pelo header "stream-media-id".
+function subirVideoResumivelComCriacao(filePath) {
+  const tamanho = statSync(filePath).size;
+  const nomeArquivo = path.basename(filePath);
+
+  return new Promise((resolve, reject) => {
+    let uid = null;
+    const upload = new tus.Upload(createReadStream(filePath), {
+      endpoint: `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/stream`,
+      headers: { Authorization: `Bearer ${CF_TOKEN}` },
+      uploadSize: tamanho,
+      chunkSize: 50 * 1024 * 1024,
+      retryDelays: [0, 3000, 5000, 10000],
+      metadata: { name: nomeArquivo },
+      onAfterResponse: (_req, res) => {
+        const header = res.getHeader("stream-media-id");
+        if (header) uid = header;
+      },
+      onError: reject,
+      onProgress: (enviado) => {
+        const pct = ((enviado / tamanho) * 100).toFixed(0);
+        process.stdout.write(`\r    ${pct}% enviado`);
+      },
+      onSuccess: () => {
+        process.stdout.write("\n");
+        resolve(uid);
+      },
+    });
+    upload.start();
+  });
+}
+
+async function subirVideo(filePath) {
+  const tamanho = statSync(filePath).size;
+
+  if (tamanho > LIMITE_UPLOAD_SIMPLES) {
+    return subirVideoResumivelComCriacao(filePath);
+  }
+
+  const { uid, uploadURL } = await criarUploadCloudflare();
+  await subirVideoSimples(filePath, uploadURL);
+  return uid;
 }
 
 async function main() {
@@ -150,8 +200,7 @@ async function main() {
       }
 
       console.log(`  ↑ enviando: ${titulo}...`);
-      const { uid, uploadURL } = await criarUploadCloudflare();
-      await subirVideo(path.join(pastaCompleta, arquivo), uploadURL);
+      const uid = await subirVideo(path.join(pastaCompleta, arquivo));
 
       if (existente) {
         await supabase.from("aulas").update({ video_id_cloudflare: uid }).eq("id", existente.id);
