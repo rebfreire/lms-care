@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
+import { createDirectUpload } from "@/lib/cloudflare/stream";
 
 export async function criarCurso(_prevState: string | null, formData: FormData) {
   const usuario = await getUsuarioAtual();
@@ -44,6 +45,24 @@ export async function criarModulo(cursoId: string, formData: FormData) {
   });
 
   revalidatePath(`/admin/cursos/${cursoId}`);
+}
+
+export async function iniciarUploadVideo(aulaId: string, cursoId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") throw new Error("Sem permissão.");
+
+  const { uid, uploadURL } = await createDirectUpload();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("aulas")
+    .update({ video_id_cloudflare: uid })
+    .eq("id", aulaId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
+  return uploadURL;
 }
 
 export async function criarAula(cursoId: string, moduloId: string, formData: FormData) {

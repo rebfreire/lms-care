@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { Video, FileText } from "lucide-react";
+import { CheckCircle2, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
 import { criarModulo, criarAula } from "../actions";
+import VideoUploader from "./VideoUploader";
 
 export default async function CursoDetalhePage({
   params,
@@ -48,10 +49,12 @@ export default async function CursoDetalhePage({
                   >
                     <FileText size={16} className="text-on-surface-variant flex-shrink-0" />
                     <span className="text-sm text-on-surface flex-1">{aula.titulo}</span>
-                    {!aula.video_id_cloudflare && (
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-warning bg-warning-container px-2 py-1 rounded-pill flex items-center gap-1">
-                        <Video size={12} /> sem vídeo
+                    {aula.video_id_cloudflare ? (
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-success bg-success-container px-2 py-1 rounded-pill flex items-center gap-1 flex-shrink-0">
+                        <CheckCircle2 size={12} /> vídeo enviado
                       </span>
+                    ) : (
+                      <VideoUploader aulaId={aula.id} cursoId={curso.id} />
                     )}
                   </li>
                 ))}
