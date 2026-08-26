@@ -1,5 +1,6 @@
-// Parser simples de CSV: separador vírgula, aspas duplas opcionais por campo,
-// primeira linha como cabeçalho. Suficiente para exportações de planilha comuns.
+// Parser simples de CSV: aceita vírgula ou ponto-e-vírgula (exportação da
+// Hotmart usa ";"), aspas duplas opcionais por campo, primeira linha como
+// cabeçalho. Suficiente para exportações de planilha comuns.
 export function parseCsv(texto: string): Record<string, string>[] {
   const linhas = texto
     .split(/\r?\n/)
@@ -8,8 +9,10 @@ export function parseCsv(texto: string): Record<string, string>[] {
 
   if (linhas.length === 0) return [];
 
+  const separador = linhas[0].includes(";") ? ";" : ",";
+
   const parseLinha = (linha: string) =>
-    linha.split(",").map((campo) => campo.trim().replace(/^"|"$/g, ""));
+    linha.split(separador).map((campo) => campo.trim().replace(/^"|"$/g, ""));
 
   const cabecalho = parseLinha(linhas[0]).map((h) => h.toLowerCase());
 

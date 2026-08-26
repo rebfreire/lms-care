@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# conteúdo bruto do cliente (vídeos, CSV de alunos) — nunca vai pro git,
+# só é usado localmente pelos scripts de importação/upload em batch
+/content
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

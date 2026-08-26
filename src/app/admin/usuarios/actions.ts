@@ -83,8 +83,8 @@ export async function importarUsuariosCsv(
 
   for (const linha of linhas) {
     const email = linha.email?.trim();
-    const nome = linha.nome?.trim();
-    const turmaNome = linha.turma?.trim() || null;
+    const nome = (linha.nome || linha.name)?.trim();
+    const turmaNome = (linha.turma || linha.class)?.trim() || null;
 
     if (!email || !nome) {
       resultados.push({

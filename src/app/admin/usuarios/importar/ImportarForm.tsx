@@ -13,10 +13,20 @@ export default function ImportarForm() {
   const [csvTexto, setCsvTexto] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    file.text().then(setCsvTexto);
+
+    const buffer = await file.arrayBuffer();
+    const utf8 = new TextDecoder("utf-8").decode(buffer);
+
+    // Exportações da Hotmart vêm em ISO-8859-1; UTF-8 mal decodificado produz
+    // o caractere de substituição (U+FFFD) — se aparecer, redecodifica.
+    const texto = utf8.includes("�")
+      ? new TextDecoder("iso-8859-1").decode(buffer)
+      : utf8;
+
+    setCsvTexto(texto);
   }
 
   return (
