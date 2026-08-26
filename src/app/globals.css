@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/*
+  Design tokens — "Care Terra"
+  Paleta e princípios emprestados do design system do projeto GSC (calor,
+  tons terrosos, tipografia serifada acolhedora), com a nomenclatura de
+  tokens MD3 (surface/on-surface/container) e o raio de cartão generoso
+  usados no Sistema Agência — mantém os dois design systems de referência
+  reconhecíveis dentro de um único conjunto de variáveis.
+*/
+:root {
+  --primary: #4a7c59;
+  --on-primary: #ffffff;
+  --primary-container: #d8e8dc;
+  --on-primary-container: #16311f;
+
+  --secondary: #705c30;
+  --on-secondary: #ffffff;
+  --secondary-container: #f0e4cf;
+  --on-secondary-container: #453619;
+
+  --success: #2e7d4f;
+  --on-success: #ffffff;
+  --success-container: #d9ecdf;
+
+  --warning: #a15c1f;
+  --on-warning: #ffffff;
+  --warning-container: #f5e2cd;
+
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+
+  --background: #faf6f0;
+  --on-background: #2e2f28;
+
+  --surface: #faf6f0;
+  --surface-bright: #fffdf9;
+  --surface-container-low: #f5efe6;
+  --surface-container: #f0e9dd;
+  --surface-container-high: #eae2d3;
+  --surface-container-highest: #e3dac8;
+
+  --on-surface: #2e2f28;
+  --on-surface-variant: #5c5a4e;
+  --outline: #8a8776;
+  --outline-variant: #d9d3c3;
+
+  --font-headline: var(--font-literata), Georgia, serif;
+  --font-body: var(--font-nunito-sans), system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-card-lg: 1.75rem;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 4px 20px rgba(46, 50, 48, 0.06);
+  --shadow-soft-lg: 0 10px 36px rgba(46, 50, 48, 0.09);
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+
+  --color-secondary: var(--secondary);
+  --color-on-secondary: var(--on-secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  --color-success: var(--success);
+  --color-on-success: var(--on-success);
+  --color-success-container: var(--success-container);
+
+  --color-warning: var(--warning);
+  --color-on-warning: var(--on-warning);
+  --color-warning-container: var(--warning-container);
+
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+
+  --color-background: var(--background);
+  --color-on-background: var(--on-background);
+
+  --color-surface: var(--surface);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --font-headline: var(--font-headline);
+  --font-body: var(--font-body);
+
+  --radius-card: var(--radius-card);
+  --radius-card-lg: var(--radius-card-lg);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-soft-lg: var(--shadow-soft-lg);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-on-background);
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+}
