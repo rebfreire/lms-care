@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircle2, PlayCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle2, PlayCircle, ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { getAulaComContexto } from "@/lib/trilha";
+import { createClient } from "@/lib/supabase/server";
 import AulaPlayer from "./AulaPlayer";
 
 export default async function AulaPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +16,13 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
 
   const { curso, aula, anterior, proxima } = contexto;
   if (curso.bloqueado) redirect("/aluno");
+
+  const supabase = await createClient();
+  const { data: quiz } = await supabase
+    .from("quizzes")
+    .select("id")
+    .eq("aula_id", aula.id)
+    .maybeSingle();
 
   const todasAulasDoCurso = curso.modulos.flatMap((m) => m.aulas);
 
@@ -62,6 +70,15 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
             {aula.titulo}
           </h1>
           <p className="text-sm text-on-surface-variant mt-1">{curso.nome}</p>
+
+          {quiz && (
+            <Link
+              href={`/aluno/aulas/${aula.id}/quiz`}
+              className="inline-flex items-center gap-2 mt-4 text-sm font-semibold text-primary hover:underline"
+            >
+              <ListChecks size={16} /> Fazer quiz desta aula
+            </Link>
+          )}
         </div>
 
         <div className="bg-surface rounded-card-lg p-5 shadow-soft h-fit">
