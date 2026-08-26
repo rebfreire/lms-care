@@ -3,6 +3,8 @@
 Substituto interno da Hotmart para treinamentos corporativos (~70 usuários, sem venda).
 Contexto completo em [`LLMS - Care.md`](./LLMS%20-%20Care.md) e [`plano-desenvolvimento.md`](./plano-desenvolvimento.md).
 
+**Produção**: https://lms-care.vercel.app (deploy automático a cada push em `main`, projeto `rebfreires-projects/lms-care` na Vercel).
+
 ## Stack
 
 - **Frontend**: Next.js 16 (App Router) + Tailwind CSS v4
@@ -52,6 +54,7 @@ supabase/
 
 ## Fases de desenvolvimento
 
-Ver [`plano-desenvolvimento.md`](./plano-desenvolvimento.md). Concluída: **Fase 0**
-(projeto Next.js, tokens de design, schema do banco). Próxima: **Fase 1** — autenticação
-com papéis admin/aluno.
+Ver [`plano-desenvolvimento.md`](./plano-desenvolvimento.md). Concluídas: **Fases 0 a 8**
+(setup, autenticação, cursos/vídeo, trilhas, usuários/CSV, player do aluno, quiz,
+relatórios, certificados) — sistema no ar em produção com dados reais do cliente.
+Falta: **Fase 9** (personalização visual mais fina, QA final, treinamento do admin).
