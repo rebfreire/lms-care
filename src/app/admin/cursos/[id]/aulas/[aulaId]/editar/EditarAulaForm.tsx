@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Button from "@/design-system/atoms/Button";
 import FormField from "@/design-system/molecules/FormField";
+import RichTextEditor from "@/design-system/molecules/RichTextEditor";
 import { editarAula } from "../../../../actions";
 
 interface EditarAulaFormProps {
@@ -19,22 +20,7 @@ export default function EditarAulaForm({ cursoId, aulaId, tituloAtual, textoApoi
     <form action={formAction} className="space-y-5">
       <FormField id="titulo" name="titulo" label="Título da aula" defaultValue={tituloAtual} required autoFocus />
 
-      <div>
-        <label
-          htmlFor="texto_apoio"
-          className="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2"
-        >
-          Texto de apoio
-        </label>
-        <textarea
-          id="texto_apoio"
-          name="texto_apoio"
-          rows={6}
-          defaultValue={textoApoioAtual}
-          placeholder="Descrição, contexto ou instruções que aparecem junto do vídeo pro aluno."
-          className="w-full rounded-2xl border border-outline-variant bg-surface px-4 py-3 text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
-        />
-      </div>
+      <RichTextEditor name="texto_apoio" label="Texto de apoio" defaultValue={textoApoioAtual} />
 
       {error && (
         <p className="text-sm text-error bg-error-container/40 rounded-xl px-4 py-2">{error}</p>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { createDirectUpload } from "@/lib/cloudflare/stream";
 
@@ -130,4 +131,62 @@ export async function criarAula(cursoId: string, moduloId: string, formData: For
   });
 
   revalidatePath(`/admin/cursos/${cursoId}`);
+}
+
+export async function adicionarMaterialArquivo(
+  aulaId: string,
+  cursoId: string,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const arquivo = formData.get("arquivo") as File | null;
+  if (!arquivo || arquivo.size === 0) return;
+
+  const admin = createAdminClient();
+  const caminho = `${aulaId}/${Date.now()}-${arquivo.name}`;
+
+  const { error: erroUpload } = await admin.storage
+    .from("materiais")
+    .upload(caminho, arquivo, { contentType: arquivo.type });
+
+  if (erroUpload) return;
+
+  const url = admin.storage.from("materiais").getPublicUrl(caminho).data.publicUrl;
+
+  const supabase = await createClient();
+  await supabase.from("aula_materiais").insert({
+    aula_id: aulaId,
+    tipo: "arquivo",
+    nome: arquivo.name,
+    url,
+  });
+
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
+}
+
+export async function adicionarMaterialLink(aulaId: string, cursoId: string, formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
+  if (!nome || !url) return;
+
+  const supabase = await createClient();
+  await supabase.from("aula_materiais").insert({
+    aula_id: aulaId,
+    tipo: "link",
+    nome,
+    url,
+  });
+
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
+}
+
+export async function removerMaterial(materialId: string, cursoId: string, aulaId: string) {
+  const supabase = await createClient();
+  await supabase.from("aula_materiais").delete().eq("id", materialId);
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
 }

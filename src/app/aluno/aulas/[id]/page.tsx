@@ -1,6 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircle2, PlayCircle, ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
+import {
+  CheckCircle2,
+  PlayCircle,
+  ChevronLeft,
+  ChevronRight,
+  ListChecks,
+  FileText,
+  Link2,
+  Download,
+} from "lucide-react";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { getAulaComContexto } from "@/lib/trilha";
 import { createClient } from "@/lib/supabase/server";
@@ -18,11 +27,10 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
   if (curso.bloqueado) redirect("/aluno");
 
   const supabase = await createClient();
-  const { data: quiz } = await supabase
-    .from("quizzes")
-    .select("id")
-    .eq("aula_id", aula.id)
-    .maybeSingle();
+  const [{ data: quiz }, { data: materiais }] = await Promise.all([
+    supabase.from("quizzes").select("id").eq("aula_id", aula.id).maybeSingle(),
+    supabase.from("aula_materiais").select("id, tipo, nome, url").eq("aula_id", aula.id).order("nome"),
+  ]);
 
   const todasAulasDoCurso = curso.modulos.flatMap((m) => m.aulas);
 
@@ -78,6 +86,44 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
             >
               <ListChecks size={16} /> Fazer quiz desta aula
             </Link>
+          )}
+
+          {aula.textoApoio && (
+            <div
+              className="prose prose-sm max-w-none mt-6 bg-surface rounded-card-lg p-6 shadow-soft text-on-surface-variant"
+              dangerouslySetInnerHTML={{ __html: aula.textoApoio }}
+            />
+          )}
+
+          {materiais && materiais.length > 0 && (
+            <div className="mt-6 bg-surface rounded-card-lg p-6 shadow-soft">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">
+                Materiais
+              </h3>
+              <ul className="space-y-2">
+                {materiais.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-surface-container-low"
+                  >
+                    {m.tipo === "arquivo" ? (
+                      <FileText size={16} className="text-on-surface-variant flex-shrink-0" />
+                    ) : (
+                      <Link2 size={16} className="text-on-surface-variant flex-shrink-0" />
+                    )}
+                    <span className="text-sm text-on-surface flex-1 truncate">{m.nome}</span>
+                    <a
+                      href={m.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1 flex-shrink-0"
+                    >
+                      <Download size={12} /> {m.tipo === "arquivo" ? "Download" : "Abrir"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 

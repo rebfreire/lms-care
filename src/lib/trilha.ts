@@ -5,6 +5,7 @@ export interface AulaComProgresso {
   titulo: string;
   ordem: number;
   videoId: string | null;
+  textoApoio: string | null;
   concluida: boolean;
   percentual: number;
   posicaoSegundos: number;
@@ -66,7 +67,7 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
   const { data: trilhaCursos } = await supabase
     .from("trilhas_cursos")
     .select(
-      "ordem, bloqueia_proximo, cursos(id, nome, modulos(id, nome, ordem, aulas(id, titulo, ordem, video_id_cloudflare)))",
+      "ordem, bloqueia_proximo, cursos(id, nome, modulos(id, nome, ordem, aulas(id, titulo, ordem, video_id_cloudflare, texto_apoio)))",
     )
     .eq("trilha_id", trilha.id)
     .order("ordem");
@@ -95,7 +96,7 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
     const curso = tc.cursos as unknown as {
       id: string;
       nome: string;
-      modulos: { id: string; nome: string; ordem: number; aulas: { id: string; titulo: string; ordem: number; video_id_cloudflare: string | null }[] }[];
+      modulos: { id: string; nome: string; ordem: number; aulas: { id: string; titulo: string; ordem: number; video_id_cloudflare: string | null; texto_apoio: string | null }[] }[];
     };
 
     const modulos: ModuloComAulas[] = (curso.modulos ?? [])
@@ -112,6 +113,7 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
               titulo: a.titulo,
               ordem: a.ordem,
               videoId: a.video_id_cloudflare,
+              textoApoio: a.texto_apoio,
               concluida: p?.concluida ?? false,
               percentual: p?.percentual_assistido ?? 0,
               posicaoSegundos: p?.posicao_segundos ?? 0,

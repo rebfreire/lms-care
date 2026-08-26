@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import EditarAulaForm from "./EditarAulaForm";
+import MateriaisSection from "./MateriaisSection";
 
 export default async function EditarAulaPage({
   params,
@@ -11,11 +12,14 @@ export default async function EditarAulaPage({
   const { id: cursoId, aulaId } = await params;
   const supabase = await createClient();
 
-  const { data: aula } = await supabase
-    .from("aulas")
-    .select("id, titulo, texto_apoio")
-    .eq("id", aulaId)
-    .single();
+  const [{ data: aula }, { data: materiais }] = await Promise.all([
+    supabase.from("aulas").select("id, titulo, texto_apoio").eq("id", aulaId).single(),
+    supabase
+      .from("aula_materiais")
+      .select("id, tipo, nome, url")
+      .eq("aula_id", aulaId)
+      .order("nome"),
+  ]);
 
   if (!aula) notFound();
 
@@ -29,6 +33,7 @@ export default async function EditarAulaPage({
           tituloAtual={aula.titulo}
           textoApoioAtual={aula.texto_apoio ?? ""}
         />
+        <MateriaisSection cursoId={cursoId} aulaId={aula.id} materiais={materiais ?? []} />
       </div>
     </div>
   );
