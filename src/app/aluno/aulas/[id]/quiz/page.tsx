@@ -12,7 +12,7 @@ export default async function QuizAlunoPage({ params }: { params: Promise<{ id: 
 
   const contexto = await getAulaComContexto(usuario.id, aulaId);
   if (!contexto) notFound();
-  if (contexto.curso.bloqueado) redirect("/aluno");
+  if (contexto.curso.bloqueado || !contexto.aula.disponivel) redirect("/aluno");
 
   const supabase = await createClient();
 

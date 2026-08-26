@@ -28,7 +28,7 @@ export default async function AlunoTrilha() {
   const proximaAula = trilha.cursos
     .filter((c) => !c.bloqueado)
     .flatMap((c) => c.modulos.flatMap((m) => m.aulas))
-    .find((a) => !a.concluida);
+    .find((a) => !a.concluida && a.disponivel);
 
   return (
     <div>
@@ -67,21 +67,36 @@ export default async function AlunoTrilha() {
               </p>
             ) : (
               <ul className="pl-8 space-y-1">
-                {curso.modulos.flatMap((m) => m.aulas).map((aula) => (
-                  <li key={aula.id}>
-                    <Link
-                      href={`/aluno/aulas/${aula.id}`}
-                      className="flex items-center gap-2 text-sm py-1.5 text-on-surface-variant hover:text-primary"
+                {curso.modulos.flatMap((m) => m.aulas).map((aula) =>
+                  aula.disponivel ? (
+                    <li key={aula.id}>
+                      <Link
+                        href={`/aluno/aulas/${aula.id}`}
+                        className="flex items-center gap-2 text-sm py-1.5 text-on-surface-variant hover:text-primary"
+                      >
+                        {aula.concluida ? (
+                          <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+                        ) : (
+                          <PlayCircle size={14} className="flex-shrink-0" />
+                        )}
+                        {aula.titulo}
+                      </Link>
+                    </li>
+                  ) : (
+                    <li
+                      key={aula.id}
+                      className="flex items-center gap-2 text-sm py-1.5 text-outline"
                     >
-                      {aula.concluida ? (
-                        <CheckCircle2 size={14} className="text-success flex-shrink-0" />
-                      ) : (
-                        <PlayCircle size={14} className="flex-shrink-0" />
-                      )}
+                      <Lock size={14} className="flex-shrink-0" />
                       {aula.titulo}
-                    </Link>
-                  </li>
-                ))}
+                      {aula.liberacaoEm && (
+                        <span className="text-xs">
+                          — libera em {new Date(aula.liberacaoEm).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
+                    </li>
+                  ),
+                )}
               </ul>
             )}
           </div>

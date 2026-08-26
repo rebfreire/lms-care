@@ -9,6 +9,8 @@ export interface AulaComProgresso {
   concluida: boolean;
   percentual: number;
   posicaoSegundos: number;
+  disponivel: boolean;
+  liberacaoEm: string | null;
 }
 
 export interface ModuloComAulas {
@@ -67,7 +69,7 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
   const { data: trilhaCursos } = await supabase
     .from("trilhas_cursos")
     .select(
-      "ordem, bloqueia_proximo, cursos(id, nome, modulos(id, nome, ordem, aulas(id, titulo, ordem, video_id_cloudflare, texto_apoio)))",
+      "ordem, bloqueia_proximo, cursos(id, nome, modulos(id, nome, ordem, aulas(id, titulo, ordem, video_id_cloudflare, texto_apoio, liberacao_agendada_em, turma_id)))",
     )
     .eq("trilha_id", trilha.id)
     .order("ordem");
@@ -96,7 +98,20 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
     const curso = tc.cursos as unknown as {
       id: string;
       nome: string;
-      modulos: { id: string; nome: string; ordem: number; aulas: { id: string; titulo: string; ordem: number; video_id_cloudflare: string | null; texto_apoio: string | null }[] }[];
+      modulos: {
+        id: string;
+        nome: string;
+        ordem: number;
+        aulas: {
+          id: string;
+          titulo: string;
+          ordem: number;
+          video_id_cloudflare: string | null;
+          texto_apoio: string | null;
+          liberacao_agendada_em: string | null;
+          turma_id: string | null;
+        }[];
+      }[];
     };
 
     const modulos: ModuloComAulas[] = (curso.modulos ?? [])
@@ -108,6 +123,15 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
           .sort((a, b) => a.ordem - b.ordem)
           .map((a) => {
             const p = progressoPorAula.get(a.id);
+
+            // Liberação agendada: se tem turma_id, só vale pra quem é dessa
+            // turma — outras turmas enxergam a aula liberada desde já.
+            const agendaAplicaAoAluno = !a.turma_id || turmaIds.includes(a.turma_id);
+            const aindaNaoLiberada =
+              agendaAplicaAoAluno &&
+              !!a.liberacao_agendada_em &&
+              new Date(a.liberacao_agendada_em) > new Date();
+
             return {
               id: a.id,
               titulo: a.titulo,
@@ -117,6 +141,8 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
               concluida: p?.concluida ?? false,
               percentual: p?.percentual_assistido ?? 0,
               posicaoSegundos: p?.posicao_segundos ?? 0,
+              disponivel: !aindaNaoLiberada,
+              liberacaoEm: aindaNaoLiberada ? a.liberacao_agendada_em : null,
             };
           }),
       }));

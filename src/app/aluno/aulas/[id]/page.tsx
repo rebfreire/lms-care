@@ -9,6 +9,7 @@ import {
   FileText,
   Link2,
   Download,
+  Lock,
 } from "lucide-react";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { getAulaComContexto } from "@/lib/trilha";
@@ -24,7 +25,7 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
   if (!contexto) notFound();
 
   const { curso, aula, anterior, proxima } = contexto;
-  if (curso.bloqueado) redirect("/aluno");
+  if (curso.bloqueado || !aula.disponivel) redirect("/aluno");
 
   const supabase = await createClient();
   const [{ data: quiz }, { data: materiais }] = await Promise.all([
@@ -132,25 +133,35 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
             Conteúdo do curso
           </h3>
           <ul className="space-y-1">
-            {todasAulasDoCurso.map((a) => (
-              <li key={a.id}>
-                <Link
-                  href={`/aluno/aulas/${a.id}`}
-                  className={`flex items-center gap-2 text-sm py-2 px-2 rounded-lg ${
-                    a.id === aula.id
-                      ? "bg-primary-container text-on-primary-container font-semibold"
-                      : "text-on-surface-variant hover:bg-surface-container-low"
-                  }`}
+            {todasAulasDoCurso.map((a) =>
+              a.disponivel ? (
+                <li key={a.id}>
+                  <Link
+                    href={`/aluno/aulas/${a.id}`}
+                    className={`flex items-center gap-2 text-sm py-2 px-2 rounded-lg ${
+                      a.id === aula.id
+                        ? "bg-primary-container text-on-primary-container font-semibold"
+                        : "text-on-surface-variant hover:bg-surface-container-low"
+                    }`}
+                  >
+                    {a.concluida ? (
+                      <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+                    ) : (
+                      <PlayCircle size={14} className="flex-shrink-0" />
+                    )}
+                    {a.titulo}
+                  </Link>
+                </li>
+              ) : (
+                <li
+                  key={a.id}
+                  className="flex items-center gap-2 text-sm py-2 px-2 rounded-lg text-outline"
                 >
-                  {a.concluida ? (
-                    <CheckCircle2 size={14} className="text-success flex-shrink-0" />
-                  ) : (
-                    <PlayCircle size={14} className="flex-shrink-0" />
-                  )}
+                  <Lock size={14} className="flex-shrink-0" />
                   {a.titulo}
-                </Link>
-              </li>
-            ))}
+                </li>
+              ),
+            )}
           </ul>
         </div>
       </div>

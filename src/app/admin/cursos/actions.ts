@@ -59,12 +59,19 @@ export async function editarAula(
 
   const titulo = String(formData.get("titulo") ?? "").trim();
   const textoApoio = String(formData.get("texto_apoio") ?? "").trim();
+  const liberacaoData = String(formData.get("liberacao_agendada_em") ?? "").trim();
+  const turmaId = String(formData.get("turma_id") ?? "").trim();
   if (!titulo) return "Título é obrigatório.";
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("aulas")
-    .update({ titulo, texto_apoio: textoApoio || null })
+    .update({
+      titulo,
+      texto_apoio: textoApoio || null,
+      liberacao_agendada_em: liberacaoData ? new Date(liberacaoData).toISOString() : null,
+      turma_id: turmaId || null,
+    })
     .eq("id", aulaId);
 
   if (error) return `Erro ao salvar: ${error.message}`;
