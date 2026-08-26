@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
+import { verificarEGerarCertificado } from "@/lib/certificado";
 
 const PERCENTUAL_CONCLUSAO = 90;
 
@@ -37,5 +38,6 @@ export async function salvarProgresso(aulaId: string, percentual: number, posica
 
   if (concluida && !existente?.concluida) {
     revalidatePath("/aluno");
+    await verificarEGerarCertificado(usuario.id);
   }
 }

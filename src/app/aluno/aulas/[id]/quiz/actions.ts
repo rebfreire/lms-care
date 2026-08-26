@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
+import { verificarEGerarCertificado } from "@/lib/certificado";
 
 export interface ResultadoQuiz {
   nota: number;
@@ -74,6 +75,10 @@ export async function responderQuiz(
     await supabase.from("respostas").insert(
       respostasParaSalvar.map((r) => ({ ...r, tentativa_id: tentativa.id })),
     );
+  }
+
+  if (aprovado) {
+    await verificarEGerarCertificado(usuario.id);
   }
 
   return { nota, aprovado, corretas };
