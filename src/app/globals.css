@@ -2,23 +2,23 @@
 @plugin "@tailwindcss/typography";
 
 /*
-  Design tokens — "Care Terra"
-  Paleta e princípios emprestados do design system do projeto GSC (calor,
-  tons terrosos, tipografia serifada acolhedora), com a nomenclatura de
-  tokens MD3 (surface/on-surface/container) e o raio de cartão generoso
-  usados no Sistema Agência — mantém os dois design systems de referência
-  reconhecíveis dentro de um único conjunto de variáveis.
+  Design tokens — "Care Azul"
+  Substitui a paleta Terra: primária derivada de #019cd9 (cor definida pelo
+  cliente), com um acento âmbar quente de apoio pra não deixar o azul frio
+  demais num produto de treinamento em saúde. Neutros passam do creme quente
+  pra um branco-azulado frio, coerente com a primária. Nomenclatura de tokens
+  (MD3-like) e raio de cartão generoso mantidos como antes.
 */
 :root {
-  --primary: #4a7c59;
+  --primary: #019cd9;
   --on-primary: #ffffff;
-  --primary-container: #d8e8dc;
-  --on-primary-container: #16311f;
+  --primary-container: #cfeefb;
+  --on-primary-container: #003548;
 
-  --secondary: #705c30;
+  --secondary: #b6752a;
   --on-secondary: #ffffff;
-  --secondary-container: #f0e4cf;
-  --on-secondary-container: #453619;
+  --secondary-container: #f6e3c9;
+  --on-secondary-container: #4a3216;
 
   --success: #2e7d4f;
   --on-success: #ffffff;
@@ -33,20 +33,20 @@
   --error-container: #ffdad6;
   --on-error-container: #93000a;
 
-  --background: #faf6f0;
-  --on-background: #2e2f28;
+  --background: #f4f9fb;
+  --on-background: #14232b;
 
-  --surface: #faf6f0;
-  --surface-bright: #fffdf9;
-  --surface-container-low: #f5efe6;
-  --surface-container: #f0e9dd;
-  --surface-container-high: #eae2d3;
-  --surface-container-highest: #e3dac8;
+  --surface: #f4f9fb;
+  --surface-bright: #ffffff;
+  --surface-container-low: #edf3f6;
+  --surface-container: #e6eef2;
+  --surface-container-high: #dee8ec;
+  --surface-container-highest: #d6e2e7;
 
-  --on-surface: #2e2f28;
-  --on-surface-variant: #5c5a4e;
-  --outline: #8a8776;
-  --outline-variant: #d9d3c3;
+  --on-surface: #14232b;
+  --on-surface-variant: #49585f;
+  --outline: #7a8a91;
+  --outline-variant: #c5d3d9;
 
   --font-headline: var(--font-literata), Georgia, serif;
   --font-body: var(--font-nunito-sans), system-ui, sans-serif;
@@ -55,8 +55,8 @@
   --radius-card-lg: 1.75rem;
   --radius-pill: 999px;
 
-  --shadow-soft: 0 4px 20px rgba(46, 50, 48, 0.06);
-  --shadow-soft-lg: 0 10px 36px rgba(46, 50, 48, 0.09);
+  --shadow-soft: 0 4px 20px rgba(20, 35, 43, 0.06);
+  --shadow-soft-lg: 0 10px 36px rgba(20, 35, 43, 0.09);
 }
 
 @theme inline {
