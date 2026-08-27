@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import Button from "@/design-system/atoms/Button";
 import FormField from "@/design-system/molecules/FormField";
 import { editarCurso } from "../../actions";
@@ -38,9 +39,16 @@ export default function EditarCursoForm({ cursoId, nomeAtual, descricaoAtual }: 
         <p className="text-sm text-error bg-error-container/40 rounded-xl px-4 py-2">{error}</p>
       )}
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Salvando..." : "Salvar"}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Salvando..." : "Salvar"}
+        </Button>
+        <Link href={`/admin/cursos/${cursoId}`}>
+          <Button type="button" variant="ghost">
+            Cancelar
+          </Button>
+        </Link>
+      </div>
     </form>
   );
 }

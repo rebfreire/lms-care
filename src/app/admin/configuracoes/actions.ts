@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 
@@ -18,7 +17,8 @@ export async function atualizarConfiguracoes(_prevState: string | null, formData
     return "Cor inválida.";
   }
 
-  const supabase = await createClient();
+  // empresas só tem policy de SELECT via RLS — update precisa do client admin
+  // (a checagem de papel === admin acima já garante que só admin chega aqui).
   const admin = createAdminClient();
 
   let logoUrl: string | undefined;
@@ -33,7 +33,7 @@ export async function atualizarConfiguracoes(_prevState: string | null, formData
     logoUrl = admin.storage.from("logos").getPublicUrl(caminho).data.publicUrl;
   }
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("empresas")
     .update({
       nome,
