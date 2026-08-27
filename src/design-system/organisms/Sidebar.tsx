@@ -30,24 +30,34 @@ export default function Sidebar({
 
   return (
     <aside className="fixed left-0 top-0 flex flex-col p-4 z-40 bg-surface-bright/80 backdrop-blur-xl rounded-card-lg m-3 h-[calc(100vh-1.5rem)] w-64 shadow-soft-lg overflow-hidden">
-      <div className="flex items-center gap-3 px-3 py-6 mb-2">
-        {brandLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={brandLogoUrl} alt={brandName} className="h-10 w-10 rounded-xl object-cover flex-shrink-0" />
-        ) : (
+      {brandLogoUrl ? (
+        <div className="flex flex-col items-center text-center px-3 py-6 mb-2 gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={brandLogoUrl} alt={brandName} className="h-16 w-auto max-w-[80%] object-contain" />
+          <div>
+            <h1 className="text-lg font-headline font-bold tracking-tight leading-none text-on-surface">
+              {brandName}
+            </h1>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">
+              {brandSubtitle}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 px-3 py-6 mb-2">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0">
             {brandName.charAt(0).toUpperCase()}
           </div>
-        )}
-        <div>
-          <h1 className="text-xl font-headline font-bold tracking-tight leading-none text-on-surface">
-            {brandName}
-          </h1>
-          <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">
-            {brandSubtitle}
-          </p>
+          <div>
+            <h1 className="text-xl font-headline font-bold tracking-tight leading-none text-on-surface">
+              {brandName}
+            </h1>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">
+              {brandSubtitle}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <nav className="flex-1 space-y-1 px-1 overflow-y-auto">
         {items.map((item) => {
