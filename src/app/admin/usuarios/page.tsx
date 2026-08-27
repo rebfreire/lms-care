@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Upload, Users2 } from "lucide-react";
+import { Upload, Users2, UserPlus, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
@@ -29,11 +29,18 @@ export default async function UsuariosPage() {
         title="Usuários e turmas"
         description="Cadastro manual — sem autoatendimento."
         actions={
-          <Link href="/admin/usuarios/importar">
-            <Button className="inline-flex items-center gap-2">
-              <Upload size={18} /> Importar CSV
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/admin/usuarios/novo">
+              <Button variant="secondary" className="inline-flex items-center gap-2">
+                <UserPlus size={18} /> Novo usuário
+              </Button>
+            </Link>
+            <Link href="/admin/usuarios/importar">
+              <Button className="inline-flex items-center gap-2">
+                <Upload size={18} /> Importar CSV
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -47,6 +54,7 @@ export default async function UsuariosPage() {
                   <th className="px-6 py-3">E-mail</th>
                   <th className="px-6 py-3">Turma</th>
                   <th className="px-6 py-3">Papel</th>
+                  <th className="px-6 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -61,11 +69,19 @@ export default async function UsuariosPage() {
                         .join(", ") || "—"}
                     </td>
                     <td className="px-6 py-3 text-on-surface-variant capitalize">{u.papel}</td>
+                    <td className="px-6 py-3">
+                      <Link
+                        href={`/admin/usuarios/${u.id}/editar`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-primary"
+                      >
+                        <Pencil size={12} /> editar
+                      </Link>
+                    </td>
                   </tr>
                 ))}
                 {(!usuarios || usuarios.length === 0) && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-on-surface-variant">
+                    <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
                       <Users2 className="mx-auto mb-2 text-outline" size={24} />
                       Nenhum usuário ainda — importe um CSV.
                     </td>
