@@ -28,7 +28,18 @@ async function trilhaCumpreRequisitosDeQuiz(usuarioId: string, aulaIds: string[]
   return quizzes.every((q) => quizIdsAprovados.has(q.id));
 }
 
-async function gerarPdfCertificado(nomeAluno: string, nomeTrilha: string, nomeEmpresa: string) {
+interface AssinanteCertificado {
+  nome: string | null;
+  cargo: string | null;
+  assinaturaUrl: string | null;
+}
+
+async function gerarPdfCertificado(
+  nomeAluno: string,
+  nomeTrilha: string,
+  nomeEmpresa: string,
+  assinante: AssinanteCertificado,
+) {
   const doc = await PDFDocument.create();
   const page = doc.addPage([842, 595]); // A4 paisagem
   const { width, height } = page.getSize();
@@ -102,6 +113,59 @@ async function gerarPdfCertificado(nomeAluno: string, nomeTrilha: string, nomeEm
     color: rgb(0.35, 0.35, 0.3),
   });
 
+  // Bloco de assinatura — só aparece se a trilha tiver um validador configurado.
+  if (assinante.nome) {
+    const centroX = width / 2;
+    const baseY = 130;
+
+    if (assinante.assinaturaUrl) {
+      try {
+        const resposta = await fetch(assinante.assinaturaUrl);
+        const bytes = await resposta.arrayBuffer();
+        const contentType = resposta.headers.get("content-type") ?? "";
+        const imagem = contentType.includes("png")
+          ? await doc.embedPng(bytes)
+          : await doc.embedJpg(bytes);
+
+        const alturaImg = 60;
+        const larguraImg = (imagem.width / imagem.height) * alturaImg;
+        page.drawImage(imagem, {
+          x: centroX - larguraImg / 2,
+          y: baseY + 10,
+          width: larguraImg,
+          height: alturaImg,
+        });
+      } catch {
+        // Se a imagem falhar (URL fora do ar, formato inesperado), segue só com o texto.
+      }
+    }
+
+    page.drawLine({
+      start: { x: centroX - 110, y: baseY },
+      end: { x: centroX + 110, y: baseY },
+      thickness: 1,
+      color: rgb(0.35, 0.35, 0.3),
+    });
+
+    page.drawText(assinante.nome, {
+      x: centralizar(assinante.nome, fontTitulo, 12),
+      y: baseY - 18,
+      size: 12,
+      font: fontTitulo,
+      color: rgb(0.18, 0.18, 0.16),
+    });
+
+    if (assinante.cargo) {
+      page.drawText(assinante.cargo, {
+        x: centralizar(assinante.cargo, fontCorpo, 10),
+        y: baseY - 34,
+        size: 10,
+        font: fontCorpo,
+        color: rgb(0.35, 0.35, 0.3),
+      });
+    }
+  }
+
   return doc.save();
 }
 
@@ -144,7 +208,17 @@ export async function verificarEGerarCertificado(usuarioId: string) {
   if (!usuario) return null;
   const nomeEmpresa = (usuario.empresas as unknown as { nome: string })?.nome ?? "Care";
 
-  const pdfBytes = await gerarPdfCertificado(usuario.nome, trilha.nome, nomeEmpresa);
+  const { data: trilhaConfig } = await supabase
+    .from("trilhas")
+    .select("certificado_assinante_nome, certificado_assinante_cargo, certificado_assinatura_url")
+    .eq("id", trilha.id)
+    .single();
+
+  const pdfBytes = await gerarPdfCertificado(usuario.nome, trilha.nome, nomeEmpresa, {
+    nome: trilhaConfig?.certificado_assinante_nome ?? null,
+    cargo: trilhaConfig?.certificado_assinante_cargo ?? null,
+    assinaturaUrl: trilhaConfig?.certificado_assinatura_url ?? null,
+  });
   const caminho = `${usuarioId}/${trilha.id}.pdf`;
 
   const { error: erroUpload } = await supabase.storage

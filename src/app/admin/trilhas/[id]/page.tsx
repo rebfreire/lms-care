@@ -9,6 +9,7 @@ import {
   alternarBloqueio,
   moverCurso,
 } from "../actions";
+import CertificadoConfigForm from "./CertificadoConfigForm";
 
 export default async function TrilhaDetalhePage({
   params,
@@ -20,7 +21,9 @@ export default async function TrilhaDetalhePage({
 
   const { data: trilha } = await supabase
     .from("trilhas")
-    .select("id, nome, descricao")
+    .select(
+      "id, nome, descricao, certificado_assinante_nome, certificado_assinante_cargo, certificado_assinatura_url",
+    )
     .eq("id", id)
     .single();
 
@@ -131,6 +134,18 @@ export default async function TrilhaDetalhePage({
           </Button>
         </form>
       )}
+
+      <h2 className="text-lg font-headline font-bold text-on-surface mt-10 mb-4">
+        Certificado — validação
+      </h2>
+      <div className="bg-surface rounded-card-lg p-6 shadow-soft max-w-xl">
+        <CertificadoConfigForm
+          trilhaId={trilha.id}
+          assinanteNomeAtual={trilha.certificado_assinante_nome}
+          assinanteCargoAtual={trilha.certificado_assinante_cargo}
+          assinaturaUrlAtual={trilha.certificado_assinatura_url}
+        />
+      </div>
     </div>
   );
 }

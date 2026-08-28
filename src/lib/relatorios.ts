@@ -9,6 +9,16 @@ export interface CursoRelatorio {
   concluidos: number;
 }
 
+export interface AlunoCursoRelatorio {
+  id: string;
+  nome: string;
+  email: string;
+  turma: string | null;
+  status: "não iniciado" | "em andamento" | "concluído";
+  percentual: number;
+  concluidoEm: string | null;
+}
+
 export interface AlunoRelatorio {
   id: string;
   nome: string;
@@ -192,4 +202,92 @@ export async function getRelatorioCursos(): Promise<CursoRelatorio[]> {
         concluidos,
       };
     });
+}
+
+export async function getNomeCurso(cursoId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("cursos").select("nome").eq("id", cursoId).single();
+  return data?.nome ?? null;
+}
+
+export async function getRelatorioCursoDetalhado(cursoId: string): Promise<AlunoCursoRelatorio[]> {
+  const supabase = await createClient();
+
+  const [{ data: trilhasCursos }, { data: atribuicoes }, { data: usuariosTurmas }, { data: alunos }] =
+    await Promise.all([
+      supabase.from("trilhas_cursos").select("trilha_id, cursos(id, modulos(aulas(id)))").eq("curso_id", cursoId),
+      supabase.from("atribuicoes_trilha").select("trilha_id, usuario_id, turma_id"),
+      supabase.from("usuarios_turmas").select("usuario_id, turma_id, turmas(nome)"),
+      supabase.from("usuarios").select("id, nome, email").eq("papel", "aluno"),
+    ]);
+
+  const trilhaIds = (trilhasCursos ?? []).map((tc) => tc.trilha_id);
+  const aulaIds = (trilhasCursos ?? []).flatMap((tc) => {
+    const curso = tc.cursos as unknown as { modulos: { aulas: { id: string }[] }[] };
+    return (curso?.modulos ?? []).flatMap((m) => m.aulas.map((a) => a.id));
+  });
+
+  const turmaPorUsuario = new Map<string, { turmaId: string; turmaNome: string }>();
+  for (const ut of usuariosTurmas ?? []) {
+    turmaPorUsuario.set(ut.usuario_id, {
+      turmaId: ut.turma_id,
+      turmaNome: (ut.turmas as unknown as { nome: string })?.nome ?? "",
+    });
+  }
+
+  const alunosElegiveis = (alunos ?? []).filter((a) => {
+    const turma = turmaPorUsuario.get(a.id);
+    return (atribuicoes ?? []).some(
+      (at) =>
+        trilhaIds.includes(at.trilha_id) &&
+        (at.usuario_id === a.id || (turma && at.turma_id === turma.turmaId)),
+    );
+  });
+
+  const { data: progressos } = aulaIds.length
+    ? await supabase
+        .from("progresso")
+        .select("usuario_id, aula_id, concluida, concluida_em")
+        .in("aula_id", aulaIds)
+    : { data: [] };
+
+  const progressoPorUsuario = new Map<
+    string,
+    { aula_id: string; concluida: boolean; concluida_em: string | null }[]
+  >();
+  for (const p of progressos ?? []) {
+    progressoPorUsuario.set(p.usuario_id, [...(progressoPorUsuario.get(p.usuario_id) ?? []), p]);
+  }
+
+  return alunosElegiveis.map((aluno) => {
+    const progressosDoAluno = (progressoPorUsuario.get(aluno.id) ?? []).filter((p) =>
+      aulaIds.includes(p.aula_id),
+    );
+    const concluidas = progressosDoAluno.filter((p) => p.concluida);
+    const percentual = aulaIds.length > 0 ? Math.round((concluidas.length / aulaIds.length) * 100) : 0;
+
+    let status: AlunoCursoRelatorio["status"] = "não iniciado";
+    let concluidoEm: string | null = null;
+
+    if (concluidas.length > 0 && aulaIds.length > 0 && concluidas.length === aulaIds.length) {
+      status = "concluído";
+      concluidoEm = concluidas
+        .map((p) => p.concluida_em)
+        .filter((d): d is string => !!d)
+        .sort()
+        .at(-1) ?? null;
+    } else if (progressosDoAluno.length > 0) {
+      status = "em andamento";
+    }
+
+    return {
+      id: aluno.id,
+      nome: aluno.nome,
+      email: aluno.email,
+      turma: turmaPorUsuario.get(aluno.id)?.turmaNome ?? null,
+      status,
+      percentual,
+      concluidoEm,
+    };
+  });
 }

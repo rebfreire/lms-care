@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Users, CheckCircle2, Activity, MoonStar } from "lucide-react";
+import { Download, Users, CheckCircle2, Activity, MoonStar, ChevronRight } from "lucide-react";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import StatCard from "@/design-system/molecules/StatCard";
 import { getRelatorioAlunos, getRelatorioCursos, type AlunoRelatorio } from "@/lib/relatorios";
@@ -86,7 +86,11 @@ export default async function RelatoriosPage() {
         </table>
       </div>
 
-      <h2 className="text-lg font-headline font-bold text-on-surface mt-10 mb-4">Progresso por curso</h2>
+      <h2 className="text-lg font-headline font-bold text-on-surface mt-10 mb-1">Progresso por curso</h2>
+      <p className="text-sm text-on-surface-variant mb-4">
+        Visão agregada por curso — clique em um curso para ver a lista nominal (útil pra
+        auditoria/conferência de normas como ISO) com status e data de conclusão de cada pessoa.
+      </p>
       <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -96,21 +100,31 @@ export default async function RelatoriosPage() {
               <th className="px-6 py-3">Não iniciaram</th>
               <th className="px-6 py-3">Em andamento</th>
               <th className="px-6 py-3">Concluíram</th>
+              <th className="px-6 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {cursos.map((c) => (
-              <tr key={c.id} className="border-b border-outline-variant last:border-0">
-                <td className="px-6 py-3 text-on-surface font-medium">{c.nome}</td>
+              <tr key={c.id} className="border-b border-outline-variant last:border-0 hover:bg-surface-container-low">
+                <td className="px-6 py-3">
+                  <Link href={`/admin/relatorios/cursos/${c.id}`} className="text-on-surface hover:text-primary font-medium">
+                    {c.nome}
+                  </Link>
+                </td>
                 <td className="px-6 py-3 text-on-surface-variant">{c.totalAlunos}</td>
                 <td className="px-6 py-3 text-on-surface-variant">{c.naoIniciaram}</td>
                 <td className="px-6 py-3 text-on-surface-variant">{c.emAndamento}</td>
                 <td className="px-6 py-3 text-on-surface-variant">{c.concluidos}</td>
+                <td className="px-6 py-3">
+                  <Link href={`/admin/relatorios/cursos/${c.id}`} className="text-on-surface-variant hover:text-primary">
+                    <ChevronRight size={16} />
+                  </Link>
+                </td>
               </tr>
             ))}
             {cursos.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
+                <td colSpan={6} className="px-6 py-10 text-center text-on-surface-variant">
                   Nenhum curso com conteúdo ainda.
                 </td>
               </tr>

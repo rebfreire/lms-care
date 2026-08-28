@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 
 export async function criarTrilha(_prevState: string | null, formData: FormData) {
@@ -24,6 +25,41 @@ export async function criarTrilha(_prevState: string | null, formData: FormData)
   if (error || !data) return `Erro ao criar trilha: ${error?.message ?? "desconhecido"}`;
 
   redirect(`/admin/trilhas/${data.id}`);
+}
+
+export async function atualizarCertificadoConfig(
+  trilhaId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const assinanteNome = String(formData.get("assinante_nome") ?? "").trim();
+  const assinanteCargo = String(formData.get("assinante_cargo") ?? "").trim();
+  const assinaturaArquivo = formData.get("assinatura") as File | null;
+
+  const admin = createAdminClient();
+  const atualizacao: Record<string, string | null> = {
+    certificado_assinante_nome: assinanteNome || null,
+    certificado_assinante_cargo: assinanteCargo || null,
+  };
+
+  if (assinaturaArquivo && assinaturaArquivo.size > 0) {
+    const caminho = `${trilhaId}.${assinaturaArquivo.name.split(".").pop()}`;
+    const { error: erroUpload } = await admin.storage
+      .from("assinaturas")
+      .upload(caminho, assinaturaArquivo, { upsert: true, contentType: assinaturaArquivo.type });
+    if (erroUpload) return `Erro ao enviar assinatura: ${erroUpload.message}`;
+    atualizacao.certificado_assinatura_url = admin.storage.from("assinaturas").getPublicUrl(caminho).data.publicUrl;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("trilhas").update(atualizacao).eq("id", trilhaId);
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath(`/admin/trilhas/${trilhaId}`);
+  return null;
 }
 
 export async function adicionarCursoNaTrilha(trilhaId: string, formData: FormData) {
