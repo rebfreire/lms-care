@@ -27,5 +27,7 @@ export async function login(_prevState: string | null, formData: FormData) {
     return `Login ok, mas sem registro em "usuarios": ${usuarioError?.message ?? "não encontrado"}`;
   }
 
+  await supabase.from("eventos_acesso").insert({ usuario_id: data.user.id });
+
   redirect(usuario.papel === "admin" ? "/admin" : "/aluno");
 }

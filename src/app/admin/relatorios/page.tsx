@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Download, Users, CheckCircle2, Activity, MoonStar } from "lucide-react";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import StatCard from "@/design-system/molecules/StatCard";
-import { getRelatorioAlunos, type AlunoRelatorio } from "@/lib/relatorios";
+import { getRelatorioAlunos, getRelatorioCursos, type AlunoRelatorio } from "@/lib/relatorios";
 
 const ENGAJAMENTO_ESTILO: Record<AlunoRelatorio["engajamento"], string> = {
   ativo: "bg-success-container text-success",
@@ -11,7 +11,7 @@ const ENGAJAMENTO_ESTILO: Record<AlunoRelatorio["engajamento"], string> = {
 };
 
 export default async function RelatoriosPage() {
-  const alunos = await getRelatorioAlunos();
+  const [alunos, cursos] = await Promise.all([getRelatorioAlunos(), getRelatorioCursos()]);
 
   const total = alunos.length;
   const ativos = alunos.filter((a) => a.engajamento === "ativo").length;
@@ -79,6 +79,39 @@ export default async function RelatoriosPage() {
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
                   Nenhum aluno ainda.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-lg font-headline font-bold text-on-surface mt-10 mb-4">Progresso por curso</h2>
+      <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
+              <th className="px-6 py-3">Curso</th>
+              <th className="px-6 py-3">Inscritos</th>
+              <th className="px-6 py-3">Não iniciaram</th>
+              <th className="px-6 py-3">Em andamento</th>
+              <th className="px-6 py-3">Concluíram</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cursos.map((c) => (
+              <tr key={c.id} className="border-b border-outline-variant last:border-0">
+                <td className="px-6 py-3 text-on-surface font-medium">{c.nome}</td>
+                <td className="px-6 py-3 text-on-surface-variant">{c.totalAlunos}</td>
+                <td className="px-6 py-3 text-on-surface-variant">{c.naoIniciaram}</td>
+                <td className="px-6 py-3 text-on-surface-variant">{c.emAndamento}</td>
+                <td className="px-6 py-3 text-on-surface-variant">{c.concluidos}</td>
+              </tr>
+            ))}
+            {cursos.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
+                  Nenhum curso com conteúdo ainda.
                 </td>
               </tr>
             )}

@@ -9,7 +9,7 @@ export default async function EditarCursoPage({ params }: { params: Promise<{ id
 
   const { data: curso } = await supabase
     .from("cursos")
-    .select("id, nome, descricao")
+    .select("id, nome, descricao, certificado_ativo")
     .eq("id", id)
     .single();
 
@@ -19,7 +19,12 @@ export default async function EditarCursoPage({ params }: { params: Promise<{ id
     <div>
       <PageHeader title="Editar curso" />
       <div className="bg-surface rounded-card-lg p-8 shadow-soft max-w-xl">
-        <EditarCursoForm cursoId={curso.id} nomeAtual={curso.nome} descricaoAtual={curso.descricao ?? ""} />
+        <EditarCursoForm
+          cursoId={curso.id}
+          nomeAtual={curso.nome}
+          descricaoAtual={curso.descricao ?? ""}
+          certificadoAtivoAtual={curso.certificado_ativo}
+        />
       </div>
     </div>
   );

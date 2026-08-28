@@ -10,9 +10,15 @@ interface EditarCursoFormProps {
   cursoId: string;
   nomeAtual: string;
   descricaoAtual: string;
+  certificadoAtivoAtual: boolean;
 }
 
-export default function EditarCursoForm({ cursoId, nomeAtual, descricaoAtual }: EditarCursoFormProps) {
+export default function EditarCursoForm({
+  cursoId,
+  nomeAtual,
+  descricaoAtual,
+  certificadoAtivoAtual,
+}: EditarCursoFormProps) {
   const [error, formAction, isPending] = useActionState(editarCurso.bind(null, cursoId), null);
 
   return (
@@ -34,6 +40,20 @@ export default function EditarCursoForm({ cursoId, nomeAtual, descricaoAtual }: 
           className="w-full rounded-2xl border border-outline-variant bg-surface px-4 py-3 text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
         />
       </div>
+
+      <label className="flex items-center gap-3 text-sm text-on-surface cursor-pointer">
+        <input
+          type="checkbox"
+          name="certificado_ativo"
+          defaultChecked={certificadoAtivoAtual}
+          className="h-4 w-4 rounded border-outline-variant accent-primary"
+        />
+        Este curso conta para o certificado da trilha
+      </label>
+      <p className="text-xs text-on-surface-variant -mt-3">
+        Desmarque se o curso for opcional/complementar — o aluno não precisa concluí-lo para
+        receber o certificado.
+      </p>
 
       {error && (
         <p className="text-sm text-error bg-error-container/40 rounded-xl px-4 py-2">{error}</p>

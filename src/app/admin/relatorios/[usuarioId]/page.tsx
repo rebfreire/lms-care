@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, LogIn } from "lucide-react";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getTrilhaDoAluno } from "@/lib/trilha";
@@ -20,7 +20,7 @@ export default async function FichaAlunoPage({
 
   if (!aluno) notFound();
 
-  const [trilha, { data: progressos }, { data: tentativas }] = await Promise.all([
+  const [trilha, { data: progressos }, { data: tentativas }, { data: acessos }] = await Promise.all([
     getTrilhaDoAluno(usuarioId),
     supabase
       .from("progresso")
@@ -31,9 +31,30 @@ export default async function FichaAlunoPage({
       .select("id, nota, aprovado, respondida_em, quizzes(nome, aulas(titulo))")
       .eq("usuario_id", usuarioId)
       .order("respondida_em", { ascending: false }),
+    supabase
+      .from("eventos_acesso")
+      .select("id, ocorrido_em")
+      .eq("usuario_id", usuarioId)
+      .order("ocorrido_em", { ascending: false })
+      .limit(30),
   ]);
 
   const progressoPorAula = new Map((progressos ?? []).map((p) => [p.aula_id, p]));
+
+  const aulaTituloPorId = new Map(
+    (trilha?.cursos ?? []).flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((a) => [a.id, a.titulo] as const))),
+  );
+
+  type EventoHistorico = { data: string; texto: string };
+  const historico: EventoHistorico[] = [
+    ...(acessos ?? []).map((e) => ({ data: e.ocorrido_em, texto: "Sessão iniciada (login)" })),
+    ...(progressos ?? [])
+      .filter((p) => p.concluida_em)
+      .map((p) => ({
+        data: p.concluida_em as string,
+        texto: `Concluiu a aula "${aulaTituloPorId.get(p.aula_id) ?? "—"}"`,
+      })),
+  ].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
   return (
     <div>
@@ -121,6 +142,31 @@ export default async function FichaAlunoPage({
                 )}
               </tbody>
             </table>
+          </div>
+
+          <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3 mt-8">
+            Histórico de acessos
+          </h3>
+          <div className="bg-surface rounded-card-lg shadow-soft p-5">
+            {historico.length === 0 ? (
+              <p className="text-on-surface-variant text-sm">Nenhum acesso registrado ainda.</p>
+            ) : (
+              <ul className="space-y-3">
+                {historico.map((e, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm">
+                    {e.texto.startsWith("Sessão") ? (
+                      <LogIn size={14} className="text-primary flex-shrink-0" />
+                    ) : (
+                      <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+                    )}
+                    <span className="text-on-surface-variant flex-1">{e.texto}</span>
+                    <span className="text-xs text-outline whitespace-nowrap">
+                      {new Date(e.data).toLocaleString("pt-BR")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

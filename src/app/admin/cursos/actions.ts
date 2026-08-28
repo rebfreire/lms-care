@@ -34,12 +34,13 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
 
   const nome = String(formData.get("nome") ?? "").trim();
   const descricao = String(formData.get("descricao") ?? "").trim();
+  const certificadoAtivo = formData.get("certificado_ativo") === "on";
   if (!nome) return "Nome do curso é obrigatório.";
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("cursos")
-    .update({ nome, descricao })
+    .update({ nome, descricao, certificado_ativo: certificadoAtivo })
     .eq("id", cursoId);
 
   if (error) return `Erro ao salvar: ${error.message}`;

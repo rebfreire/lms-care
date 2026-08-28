@@ -23,10 +23,8 @@ export default function NovoUsuarioForm({ turmas }: NovoUsuarioFormProps) {
           <CheckCircle2 size={18} /> Usuário criado com sucesso
         </p>
         <p className="text-sm">
-          Senha temporária: <span className="font-mono font-bold">{resultado.senhaTemporaria}</span>
-        </p>
-        <p className="text-xs opacity-80">
-          Copie agora — ela não fica salva em lugar nenhum, só aparece aqui uma vez.
+          Enviamos um e-mail para <span className="font-semibold">{resultado.emailConvite}</span> com
+          um link para definir a própria senha.
         </p>
       </div>
     );

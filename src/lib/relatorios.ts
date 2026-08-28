@@ -1,5 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 
+export interface CursoRelatorio {
+  id: string;
+  nome: string;
+  totalAlunos: number;
+  naoIniciaram: number;
+  emAndamento: number;
+  concluidos: number;
+}
+
 export interface AlunoRelatorio {
   id: string;
   nome: string;
@@ -106,4 +115,81 @@ export async function getRelatorioAlunos(): Promise<AlunoRelatorio[]> {
       engajamento,
     };
   });
+}
+
+export async function getRelatorioCursos(): Promise<CursoRelatorio[]> {
+  const supabase = await createClient();
+
+  const [{ data: trilhasCursos }, { data: atribuicoes }, { data: usuariosTurmas }] = await Promise.all([
+    supabase
+      .from("trilhas_cursos")
+      .select("trilha_id, cursos(id, nome, modulos(aulas(id)))"),
+    supabase.from("atribuicoes_trilha").select("trilha_id, usuario_id, turma_id"),
+    supabase.from("usuarios_turmas").select("usuario_id, turma_id"),
+  ]);
+
+  const turmasPorUsuario = new Map<string, string[]>();
+  for (const ut of usuariosTurmas ?? []) {
+    turmasPorUsuario.set(ut.usuario_id, [...(turmasPorUsuario.get(ut.usuario_id) ?? []), ut.turma_id]);
+  }
+
+  // Todos os alunos, com o conjunto de trilhas a que têm acesso (direto ou via turma).
+  const { data: alunos } = await supabase.from("usuarios").select("id").eq("papel", "aluno");
+  const trilhasPorAluno = new Map<string, Set<string>>();
+  for (const aluno of alunos ?? []) {
+    const turmasDoAluno = turmasPorUsuario.get(aluno.id) ?? [];
+    const trilhas = (atribuicoes ?? [])
+      .filter((a) => a.usuario_id === aluno.id || (a.turma_id && turmasDoAluno.includes(a.turma_id)))
+      .map((a) => a.trilha_id);
+    trilhasPorAluno.set(aluno.id, new Set(trilhas));
+  }
+
+  const cursos = (trilhasCursos ?? []).map((tc) => {
+    const curso = tc.cursos as unknown as { id: string; nome: string; modulos: { aulas: { id: string }[] }[] };
+    const aulaIds = (curso?.modulos ?? []).flatMap((m) => m.aulas.map((a) => a.id));
+    return { trilhaId: tc.trilha_id, id: curso.id, nome: curso.nome, aulaIds };
+  });
+
+  const todasAulaIds = [...new Set(cursos.flatMap((c) => c.aulaIds))];
+  const { data: progressos } = todasAulaIds.length
+    ? await supabase
+        .from("progresso")
+        .select("usuario_id, aula_id, concluida")
+        .in("aula_id", todasAulaIds)
+    : { data: [] };
+
+  const progressoPorUsuario = new Map<string, { aula_id: string; concluida: boolean }[]>();
+  for (const p of progressos ?? []) {
+    progressoPorUsuario.set(p.usuario_id, [...(progressoPorUsuario.get(p.usuario_id) ?? []), p]);
+  }
+
+  return cursos
+    .filter((c) => c.aulaIds.length > 0)
+    .map((curso) => {
+      const alunosElegiveis = (alunos ?? []).filter((a) => trilhasPorAluno.get(a.id)?.has(curso.trilhaId));
+
+      let naoIniciaram = 0;
+      let emAndamento = 0;
+      let concluidos = 0;
+
+      for (const aluno of alunosElegiveis) {
+        const progressosDoAluno = (progressoPorUsuario.get(aluno.id) ?? []).filter((p) =>
+          curso.aulaIds.includes(p.aula_id),
+        );
+        const concluidas = progressosDoAluno.filter((p) => p.concluida).length;
+
+        if (progressosDoAluno.length === 0) naoIniciaram++;
+        else if (concluidas === curso.aulaIds.length) concluidos++;
+        else emAndamento++;
+      }
+
+      return {
+        id: curso.id,
+        nome: curso.nome,
+        totalAlunos: alunosElegiveis.length,
+        naoIniciaram,
+        emAndamento,
+        concluidos,
+      };
+    });
 }

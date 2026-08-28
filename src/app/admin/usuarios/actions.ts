@@ -9,7 +9,7 @@ import { parseCsv, gerarSenhaTemporaria } from "@/lib/csv";
 
 export interface ResultadoCriacao {
   status: "criado";
-  senhaTemporaria: string;
+  emailConvite: string;
 }
 
 export interface LinhaImportacao {
@@ -208,11 +208,13 @@ export async function criarUsuarioManual(
   if (!nome || !email) return "Nome e e-mail são obrigatórios.";
 
   const admin = createAdminClient();
-  const senhaTemporaria = gerarSenhaTemporaria();
+  // Senha aleatória e descartada — o aluno nunca chega a saber dela, define
+  // a própria senha pelo link de e-mail enviado logo abaixo.
+  const senhaInicial = gerarSenhaTemporaria();
 
   const { data: novoAuth, error: erroAuth } = await admin.auth.admin.createUser({
     email,
-    password: senhaTemporaria,
+    password: senhaInicial,
     email_confirm: true,
   });
 
@@ -238,8 +240,13 @@ export async function criarUsuarioManual(
     await supabase.from("usuarios_turmas").insert({ usuario_id: novoAuth.user.id, turma_id: turmaId });
   }
 
+  const origem = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origem}/auth/callback?next=/redefinir-senha`,
+  });
+
   revalidatePath("/admin/usuarios");
-  return { status: "criado", senhaTemporaria };
+  return { status: "criado", emailConvite: email };
 }
 
 export async function editarUsuario(

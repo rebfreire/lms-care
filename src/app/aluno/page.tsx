@@ -45,62 +45,47 @@ export default async function AlunoTrilha() {
         )}
       </div>
 
-      <div className="space-y-4">
-        {trilha.cursos.map((curso) => (
-          <div key={curso.id} className="bg-surface rounded-card-lg p-6 shadow-soft">
-            <div className="flex items-center gap-3 mb-3">
-              {curso.concluido ? (
-                <CheckCircle2 className="text-success flex-shrink-0" size={20} />
-              ) : curso.bloqueado ? (
-                <Lock className="text-outline flex-shrink-0" size={20} />
-              ) : (
-                <PlayCircle className="text-primary flex-shrink-0" size={20} />
-              )}
-              <h3 className="text-lg font-headline font-bold text-on-surface flex-1">
-                {curso.nome}
-              </h3>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {trilha.cursos.map((curso) => {
+          const aulasDoCurso = curso.modulos.flatMap((m) => m.aulas);
+          const concluidasDoCurso = aulasDoCurso.filter((a) => a.concluida).length;
+          const progressoCurso =
+            aulasDoCurso.length > 0 ? Math.round((concluidasDoCurso / aulasDoCurso.length) * 100) : 0;
 
-            {curso.bloqueado ? (
-              <p className="text-sm text-on-surface-variant pl-8">
-                Conclua o curso anterior para desbloquear.
-              </p>
-            ) : (
-              <ul className="pl-8 space-y-1">
-                {curso.modulos.flatMap((m) => m.aulas).map((aula) =>
-                  aula.disponivel ? (
-                    <li key={aula.id}>
-                      <Link
-                        href={`/aluno/aulas/${aula.id}`}
-                        className="flex items-center gap-2 text-sm py-1.5 text-on-surface-variant hover:text-primary"
-                      >
-                        {aula.concluida ? (
-                          <CheckCircle2 size={14} className="text-success flex-shrink-0" />
-                        ) : (
-                          <PlayCircle size={14} className="flex-shrink-0" />
-                        )}
-                        {aula.titulo}
-                      </Link>
-                    </li>
-                  ) : (
-                    <li
-                      key={aula.id}
-                      className="flex items-center gap-2 text-sm py-1.5 text-outline"
-                    >
-                      <Lock size={14} className="flex-shrink-0" />
-                      {aula.titulo}
-                      {aula.liberacaoEm && (
-                        <span className="text-xs">
-                          — libera em {new Date(aula.liberacaoEm).toLocaleDateString("pt-BR")}
-                        </span>
-                      )}
-                    </li>
-                  ),
+          const conteudo = (
+            <div className="bg-surface rounded-card-lg p-6 shadow-soft h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-3">
+                {curso.concluido ? (
+                  <CheckCircle2 className="text-success flex-shrink-0" size={20} />
+                ) : curso.bloqueado ? (
+                  <Lock className="text-outline flex-shrink-0" size={20} />
+                ) : (
+                  <PlayCircle className="text-primary flex-shrink-0" size={20} />
                 )}
-              </ul>
-            )}
-          </div>
-        ))}
+                <h3 className="text-lg font-headline font-bold text-on-surface flex-1">{curso.nome}</h3>
+              </div>
+
+              {curso.bloqueado ? (
+                <p className="text-sm text-on-surface-variant">Conclua o curso anterior para desbloquear.</p>
+              ) : (
+                <div className="mt-auto pt-2">
+                  <ProgressBar
+                    value={progressoCurso}
+                    label={`${concluidasDoCurso}/${aulasDoCurso.length} aulas`}
+                  />
+                </div>
+              )}
+            </div>
+          );
+
+          return curso.bloqueado ? (
+            <div key={curso.id}>{conteudo}</div>
+          ) : (
+            <Link key={curso.id} href={`/aluno/cursos/${curso.id}`}>
+              {conteudo}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

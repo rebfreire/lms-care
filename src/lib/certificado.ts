@@ -109,14 +109,16 @@ export async function verificarEGerarCertificado(usuarioId: string) {
   const trilha = await getTrilhaDoAluno(usuarioId);
   if (!trilha) return null;
 
-  // Curso sem nenhuma aula cadastrada ainda (conteúdo pendente de upload) não
-  // pode travar a trilha pra sempre — conta como "nada a fazer" aqui.
-  const cursosComConteudo = trilha.cursos.filter((c) => c.modulos.flatMap((m) => m.aulas).length > 0);
+  // Curso sem nenhuma aula cadastrada ainda (conteúdo pendente de upload), ou
+  // marcado como fora do certificado pelo admin, não trava a emissão.
+  const cursosQueContam = trilha.cursos.filter(
+    (c) => c.certificadoAtivo && c.modulos.flatMap((m) => m.aulas).length > 0,
+  );
   const todosCursosConcluidos =
-    cursosComConteudo.length > 0 && cursosComConteudo.every((c) => c.concluido);
+    cursosQueContam.length > 0 && cursosQueContam.every((c) => c.concluido);
   if (!todosCursosConcluidos) return null;
 
-  const aulaIds = trilha.cursos.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((a) => a.id)));
+  const aulaIds = cursosQueContam.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((a) => a.id)));
   const cumpreQuizzes = await trilhaCumpreRequisitosDeQuiz(usuarioId, aulaIds);
   if (!cumpreQuizzes) return null;
 
