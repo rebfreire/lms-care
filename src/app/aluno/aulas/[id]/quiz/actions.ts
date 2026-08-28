@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
-import { verificarEGerarCertificado } from "@/lib/certificado";
+import { verificarEGerarCertificadoDoCurso, getCursoIdDaAula } from "@/lib/certificado";
 
 export interface ResultadoQuiz {
   nota: number;
@@ -22,7 +22,7 @@ export async function responderQuiz(
 
   const { data: quiz } = await supabase
     .from("quizzes")
-    .select("nota_corte, tentativas_permitidas")
+    .select("aula_id, nota_corte, tentativas_permitidas")
     .eq("id", quizId)
     .single();
   if (!quiz) return "Quiz não encontrado.";
@@ -78,7 +78,8 @@ export async function responderQuiz(
   }
 
   if (aprovado) {
-    await verificarEGerarCertificado(usuario.id);
+    const cursoId = await getCursoIdDaAula(quiz.aula_id);
+    if (cursoId) await verificarEGerarCertificadoDoCurso(usuario.id, cursoId);
   }
 
   return { nota, aprovado, corretas };

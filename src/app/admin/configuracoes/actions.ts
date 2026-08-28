@@ -47,3 +47,27 @@ export async function atualizarConfiguracoes(_prevState: string | null, formData
   revalidatePath("/", "layout");
   return null;
 }
+
+export async function atualizarCertificadoGlobal(_prevState: string | null, formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const certificadoAtivo = formData.get("certificado_ativo") === "on";
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  const texto = String(formData.get("texto") ?? "").trim();
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("empresas")
+    .update({
+      certificado_ativo: certificadoAtivo,
+      certificado_titulo: titulo || null,
+      certificado_texto: texto || null,
+    })
+    .eq("id", usuario.empresaId);
+
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath("/admin/configuracoes/certificado");
+  return null;
+}

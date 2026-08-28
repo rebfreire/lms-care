@@ -35,15 +35,24 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
   const nome = String(formData.get("nome") ?? "").trim();
   const descricao = String(formData.get("descricao") ?? "").trim();
   const certificadoAtivo = formData.get("certificado_ativo") === "on";
+  const assinanteNome = String(formData.get("assinante_nome") ?? "").trim();
+  const assinanteCargo = String(formData.get("assinante_cargo") ?? "").trim();
   if (!nome) return "Nome do curso é obrigatório.";
 
   const capaHorizontal = formData.get("capa_horizontal") as File | null;
   const capaVertical = formData.get("capa_vertical") as File | null;
+  const assinaturaArquivo = formData.get("assinatura") as File | null;
 
   // Storage tem RLS própria — usa admin pra essa escrita, mesma checagem de
   // papel === admin acima já garante quem chega aqui.
   const admin = createAdminClient();
-  const atualizacao: Record<string, string | boolean> = { nome, descricao, certificado_ativo: certificadoAtivo };
+  const atualizacao: Record<string, string | boolean | null> = {
+    nome,
+    descricao,
+    certificado_ativo: certificadoAtivo,
+    certificado_assinante_nome: assinanteNome || null,
+    certificado_assinante_cargo: assinanteCargo || null,
+  };
 
   if (capaHorizontal && capaHorizontal.size > 0) {
     const caminho = `${cursoId}/horizontal-${Date.now()}.${capaHorizontal.name.split(".").pop()}`;
@@ -61,6 +70,15 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
       .upload(caminho, capaVertical, { upsert: true, contentType: capaVertical.type });
     if (erroUpload) return `Erro ao enviar capa vertical: ${erroUpload.message}`;
     atualizacao.capa_vertical_url = admin.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
+  }
+
+  if (assinaturaArquivo && assinaturaArquivo.size > 0) {
+    const caminho = `${cursoId}.${assinaturaArquivo.name.split(".").pop()}`;
+    const { error: erroUpload } = await admin.storage
+      .from("assinaturas")
+      .upload(caminho, assinaturaArquivo, { upsert: true, contentType: assinaturaArquivo.type });
+    if (erroUpload) return `Erro ao enviar assinatura: ${erroUpload.message}`;
+    atualizacao.certificado_assinatura_url = admin.storage.from("assinaturas").getPublicUrl(caminho).data.publicUrl;
   }
 
   const supabase = await createClient();

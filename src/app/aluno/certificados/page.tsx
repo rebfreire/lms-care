@@ -11,7 +11,7 @@ export default async function CertificadosPage() {
   const supabase = await createClient();
   const { data: certificados } = await supabase
     .from("certificados")
-    .select("id, emitido_em, url_pdf, trilhas(nome)")
+    .select("id, emitido_em, url_pdf, cursos(nome)")
     .eq("usuario_id", usuario.id)
     .order("emitido_em", { ascending: false });
 
@@ -39,7 +39,7 @@ export default async function CertificadosPage() {
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-on-surface">
-                  {(c.trilhas as unknown as { nome: string })?.nome}
+                  {(c.cursos as unknown as { nome: string })?.nome}
                 </p>
                 <p className="text-xs text-on-surface-variant">
                   Emitido em {new Date(c.emitido_em).toLocaleDateString("pt-BR")}

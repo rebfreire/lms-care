@@ -11,7 +11,7 @@ const ITEMS = [
   { href: "/admin/trilhas", label: "Trilhas", icon: <Map size={18} /> },
   { href: "/admin/usuarios", label: "Usuários e turmas", icon: <Users size={18} /> },
   { href: "/admin/relatorios", label: "Relatórios", icon: <BarChart3 size={18} /> },
-  { href: "/admin/configuracoes", label: "Personalização", icon: <Settings size={18} /> },
+  { href: "/admin/configuracoes", label: "Configurações", icon: <Settings size={18} /> },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
-import { verificarEGerarCertificado } from "@/lib/certificado";
+import { verificarEGerarCertificadoDoCurso, getCursoIdDaAula } from "@/lib/certificado";
 
 const PERCENTUAL_CONCLUSAO = 90;
 
@@ -38,6 +38,7 @@ export async function salvarProgresso(aulaId: string, percentual: number, posica
 
   if (concluida && !existente?.concluida) {
     revalidatePath("/aluno");
-    await verificarEGerarCertificado(usuario.id);
+    const cursoId = await getCursoIdDaAula(aulaId);
+    if (cursoId) await verificarEGerarCertificadoDoCurso(usuario.id, cursoId);
   }
 }

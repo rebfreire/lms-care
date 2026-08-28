@@ -13,6 +13,9 @@ interface EditarCursoFormProps {
   certificadoAtivoAtual: boolean;
   capaHorizontalAtual: string | null;
   capaVerticalAtual: string | null;
+  assinanteNomeAtual: string | null;
+  assinanteCargoAtual: string | null;
+  assinaturaUrlAtual: string | null;
 }
 
 export default function EditarCursoForm({
@@ -22,6 +25,9 @@ export default function EditarCursoForm({
   certificadoAtivoAtual,
   capaHorizontalAtual,
   capaVerticalAtual,
+  assinanteNomeAtual,
+  assinanteCargoAtual,
+  assinaturaUrlAtual,
 }: EditarCursoFormProps) {
   const [error, formAction, isPending] = useActionState(editarCurso.bind(null, cursoId), null);
 
@@ -87,19 +93,58 @@ export default function EditarCursoForm({
         </div>
       </div>
 
-      <label className="flex items-center gap-3 text-sm text-on-surface cursor-pointer">
-        <input
-          type="checkbox"
-          name="certificado_ativo"
-          defaultChecked={certificadoAtivoAtual}
-          className="h-4 w-4 rounded border-outline-variant accent-primary"
-        />
-        Este curso conta para o certificado da trilha
-      </label>
-      <p className="text-xs text-on-surface-variant -mt-3">
-        Desmarque se o curso for opcional/complementar — o aluno não precisa concluí-lo para
-        receber o certificado.
-      </p>
+      <div className="border-t border-outline-variant pt-5 space-y-4">
+        <label className="flex items-center gap-3 text-sm text-on-surface cursor-pointer">
+          <input
+            type="checkbox"
+            name="certificado_ativo"
+            defaultChecked={certificadoAtivoAtual}
+            className="h-4 w-4 rounded border-outline-variant accent-primary"
+          />
+          Emitir certificado ao concluir este curso
+        </label>
+        <p className="text-xs text-on-surface-variant -mt-2">
+          O modelo do certificado (logo, título, texto) é o mesmo pra todos os cursos — configurável
+          em Configurações → Certificado. Aqui você define quem valida este curso específico.
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            id="assinante_nome"
+            name="assinante_nome"
+            label="Nome de quem valida"
+            defaultValue={assinanteNomeAtual ?? ""}
+            placeholder="Dra. Fulana de Tal"
+          />
+          <FormField
+            id="assinante_cargo"
+            name="assinante_cargo"
+            label="Cargo"
+            defaultValue={assinanteCargoAtual ?? ""}
+            placeholder="Coordenadora de T&D"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
+            Imagem da assinatura (opcional)
+          </label>
+          {assinaturaUrlAtual && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={assinaturaUrlAtual}
+              alt=""
+              className="h-16 object-contain mb-2 bg-surface-container-low rounded-lg px-3"
+            />
+          )}
+          <input
+            type="file"
+            name="assinatura"
+            accept="image/*"
+            className="w-full text-sm text-on-surface-variant file:mr-3 file:rounded-full file:border-0 file:bg-primary-container file:text-on-primary-container file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-widest"
+          />
+        </div>
+      </div>
 
       {error && (
         <p className="text-sm text-error bg-error-container/40 rounded-xl px-4 py-2">{error}</p>
