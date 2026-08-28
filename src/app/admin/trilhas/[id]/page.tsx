@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUp, ArrowDown, Lock, LockOpen, X } from "lucide-react";
+import { ArrowUp, ArrowDown, Lock, LockOpen, X, Award } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
@@ -47,7 +48,18 @@ export default async function TrilhaDetalhePage({
 
   return (
     <div>
-      <PageHeader title={trilha.nome} description={trilha.descricao ?? undefined} />
+      <PageHeader
+        title={trilha.nome}
+        description={trilha.descricao ?? undefined}
+        actions={
+          <Link
+            href="#certificado"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-primary"
+          >
+            <Award size={16} /> Configurar certificado
+          </Link>
+        }
+      />
 
       <div className="bg-surface rounded-card-lg p-6 shadow-soft space-y-3 mb-6">
         {trilhaCursos?.length === 0 && (
@@ -135,8 +147,11 @@ export default async function TrilhaDetalhePage({
         </form>
       )}
 
-      <h2 className="text-lg font-headline font-bold text-on-surface mt-10 mb-4">
-        Certificado — validação
+      <h2
+        id="certificado"
+        className="text-lg font-headline font-bold text-on-surface mt-10 mb-4 scroll-mt-6 flex items-center gap-2"
+      >
+        <Award size={20} className="text-primary" /> Certificado — validação
       </h2>
       <div className="bg-surface rounded-card-lg p-6 shadow-soft max-w-xl">
         <CertificadoConfigForm

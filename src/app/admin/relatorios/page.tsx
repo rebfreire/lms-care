@@ -2,13 +2,8 @@ import Link from "next/link";
 import { Download, Users, CheckCircle2, Activity, MoonStar, ChevronRight } from "lucide-react";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import StatCard from "@/design-system/molecules/StatCard";
-import { getRelatorioAlunos, getRelatorioCursos, type AlunoRelatorio } from "@/lib/relatorios";
-
-const ENGAJAMENTO_ESTILO: Record<AlunoRelatorio["engajamento"], string> = {
-  ativo: "bg-success-container text-success",
-  inativo: "bg-warning-container text-warning",
-  "não iniciado": "bg-surface-container-high text-on-surface-variant",
-};
+import { getRelatorioAlunos, getRelatorioCursos } from "@/lib/relatorios";
+import TabelaAlunos from "./TabelaAlunos";
 
 export default async function RelatoriosPage() {
   const [alunos, cursos] = await Promise.all([getRelatorioAlunos(), getRelatorioCursos()]);
@@ -39,52 +34,7 @@ export default async function RelatoriosPage() {
         <StatCard icon={<CheckCircle2 size={22} />} label="Concluíram a trilha" value={concluiramTudo} variant="accent" />
       </div>
 
-      <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
-              <th className="px-6 py-3">Nome</th>
-              <th className="px-6 py-3">Turma</th>
-              <th className="px-6 py-3">Progresso</th>
-              <th className="px-6 py-3">Último acesso</th>
-              <th className="px-6 py-3">Engajamento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {alunos.map((a) => (
-              <tr key={a.id} className="border-b border-outline-variant last:border-0">
-                <td className="px-6 py-3">
-                  <Link href={`/admin/relatorios/${a.id}`} className="text-on-surface hover:text-primary font-medium">
-                    {a.nome}
-                  </Link>
-                  <p className="text-xs text-on-surface-variant">{a.email}</p>
-                </td>
-                <td className="px-6 py-3 text-on-surface-variant">{a.turma ?? "—"}</td>
-                <td className="px-6 py-3 text-on-surface-variant">
-                  {a.totalAulas > 0 ? `${a.aulasConcluidas}/${a.totalAulas} (${a.percentual}%)` : "sem trilha"}
-                </td>
-                <td className="px-6 py-3 text-on-surface-variant">
-                  {a.ultimoAcesso ? new Date(a.ultimoAcesso).toLocaleDateString("pt-BR") : "nunca"}
-                </td>
-                <td className="px-6 py-3">
-                  <span
-                    className={`inline-flex items-center rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-widest ${ENGAJAMENTO_ESTILO[a.engajamento]}`}
-                  >
-                    {a.engajamento}
-                  </span>
-                </td>
-              </tr>
-            ))}
-            {alunos.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
-                  Nenhum aluno ainda.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TabelaAlunos alunos={alunos} />
 
       <h2 className="text-lg font-headline font-bold text-on-surface mt-10 mb-1">Progresso por curso</h2>
       <p className="text-sm text-on-surface-variant mb-4">
