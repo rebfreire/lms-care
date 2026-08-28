@@ -18,7 +18,11 @@ export default async function CursoAlunoPage({ params }: { params: Promise<{ id:
   if (curso.bloqueado) redirect("/aluno");
 
   const supabase = await createClient();
-  const { data: cursoInfo } = await supabase.from("cursos").select("descricao").eq("id", id).single();
+  const { data: cursoInfo } = await supabase
+    .from("cursos")
+    .select("descricao, capa_url")
+    .eq("id", id)
+    .single();
 
   const aulas = curso.modulos.flatMap((m) => m.aulas);
   const concluidas = aulas.filter((a) => a.concluida).length;
@@ -31,19 +35,33 @@ export default async function CursoAlunoPage({ params }: { params: Promise<{ id:
         <ArrowLeft size={16} /> Voltar pra trilha
       </Link>
 
-      <div className="bg-surface rounded-card-lg p-8 shadow-soft mb-6">
-        <h1 className="text-2xl font-headline font-bold text-on-surface mb-2">{curso.nome}</h1>
-        {cursoInfo?.descricao && (
-          <p className="text-sm text-on-surface-variant mb-5 max-w-2xl">{cursoInfo.descricao}</p>
-        )}
-        <ProgressBar value={progresso} label={`${concluidas}/${aulas.length} conteúdos`} className="max-w-md" />
-        {proximaAula && (
-          <Link href={`/aluno/aulas/${proximaAula.id}`} className="inline-block mt-5">
-            <Button className="inline-flex items-center gap-2">
-              <PlayCircle size={18} /> {concluidas > 0 ? "Continuar assistindo" : "Começar"}
-            </Button>
-          </Link>
-        )}
+      <div className="rounded-card-lg overflow-hidden shadow-soft mb-6 bg-surface">
+        <div className="relative">
+          {cursoInfo?.capa_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={cursoInfo.capa_url} alt="" className="w-full aspect-[21/9] object-cover" />
+          ) : (
+            <div className="w-full aspect-[21/9] bg-surface-container-high" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-on-background/85 via-on-background/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-8">
+            <h1 className="text-2xl font-headline font-bold text-white">{curso.nome}</h1>
+            {cursoInfo?.descricao && (
+              <p className="text-sm text-white/85 mt-2 max-w-2xl">{cursoInfo.descricao}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="p-8">
+          <ProgressBar value={progresso} label={`${concluidas}/${aulas.length} conteúdos`} className="max-w-md" />
+          {proximaAula && (
+            <Link href={`/aluno/aulas/${proximaAula.id}`} className="inline-block mt-5">
+              <Button className="inline-flex items-center gap-2">
+                <PlayCircle size={18} /> {concluidas > 0 ? "Continuar assistindo" : "Começar"}
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">

@@ -37,10 +37,36 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
   const certificadoAtivo = formData.get("certificado_ativo") === "on";
   if (!nome) return "Nome do curso é obrigatório.";
 
+  const capaHorizontal = formData.get("capa_horizontal") as File | null;
+  const capaVertical = formData.get("capa_vertical") as File | null;
+
+  // Storage tem RLS própria — usa admin pra essa escrita, mesma checagem de
+  // papel === admin acima já garante quem chega aqui.
+  const admin = createAdminClient();
+  const atualizacao: Record<string, string | boolean> = { nome, descricao, certificado_ativo: certificadoAtivo };
+
+  if (capaHorizontal && capaHorizontal.size > 0) {
+    const caminho = `${cursoId}/horizontal-${Date.now()}.${capaHorizontal.name.split(".").pop()}`;
+    const { error: erroUpload } = await admin.storage
+      .from("capas")
+      .upload(caminho, capaHorizontal, { upsert: true, contentType: capaHorizontal.type });
+    if (erroUpload) return `Erro ao enviar capa horizontal: ${erroUpload.message}`;
+    atualizacao.capa_url = admin.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
+  }
+
+  if (capaVertical && capaVertical.size > 0) {
+    const caminho = `${cursoId}/vertical-${Date.now()}.${capaVertical.name.split(".").pop()}`;
+    const { error: erroUpload } = await admin.storage
+      .from("capas")
+      .upload(caminho, capaVertical, { upsert: true, contentType: capaVertical.type });
+    if (erroUpload) return `Erro ao enviar capa vertical: ${erroUpload.message}`;
+    atualizacao.capa_vertical_url = admin.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("cursos")
-    .update({ nome, descricao, certificado_ativo: certificadoAtivo })
+    .update(atualizacao)
     .eq("id", cursoId);
 
   if (error) return `Erro ao salvar: ${error.message}`;

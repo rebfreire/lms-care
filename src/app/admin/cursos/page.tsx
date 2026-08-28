@@ -8,7 +8,7 @@ export default async function CursosPage() {
   const supabase = await createClient();
   const { data: cursos } = await supabase
     .from("cursos")
-    .select("id, nome, descricao, modulos(count)")
+    .select("id, nome, descricao, capa_url, modulos(count)")
     .order("nome");
 
   return (
@@ -36,19 +36,31 @@ export default async function CursosPage() {
             <Link
               key={curso.id}
               href={`/admin/cursos/${curso.id}`}
-              className="bg-surface rounded-card p-6 shadow-soft hover:shadow-soft-lg transition-shadow block"
+              className="bg-surface rounded-card shadow-soft hover:shadow-soft-lg transition-shadow flex gap-4 overflow-hidden"
             >
-              <h3 className="text-lg font-headline font-bold text-on-surface">
-                {curso.nome}
-              </h3>
-              {curso.descricao && (
-                <p className="text-on-surface-variant text-sm mt-1 line-clamp-2">
-                  {curso.descricao}
-                </p>
+              {curso.capa_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={curso.capa_url}
+                  alt=""
+                  className="w-32 aspect-video object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-32 aspect-video bg-surface-container-high flex-shrink-0" />
               )}
-              <p className="text-xs text-outline uppercase tracking-widest font-bold mt-4">
-                {curso.modulos?.[0]?.count ?? 0} módulo(s)
-              </p>
+              <div className="py-6 pr-6 min-w-0">
+                <h3 className="text-lg font-headline font-bold text-on-surface">
+                  {curso.nome}
+                </h3>
+                {curso.descricao && (
+                  <p className="text-on-surface-variant text-sm mt-1 line-clamp-2">
+                    {curso.descricao}
+                  </p>
+                )}
+                <p className="text-xs text-outline uppercase tracking-widest font-bold mt-4">
+                  {curso.modulos?.[0]?.count ?? 0} módulo(s)
+                </p>
+              </div>
             </Link>
           ))}
         </div>

@@ -45,7 +45,7 @@ export default async function AlunoTrilha() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
         {trilha.cursos.map((curso) => {
           const aulasDoCurso = curso.modulos.flatMap((m) => m.aulas);
           const concluidasDoCurso = aulasDoCurso.filter((a) => a.concluida).length;
@@ -53,28 +53,44 @@ export default async function AlunoTrilha() {
             aulasDoCurso.length > 0 ? Math.round((concluidasDoCurso / aulasDoCurso.length) * 100) : 0;
 
           const conteudo = (
-            <div className="bg-surface rounded-card-lg p-6 shadow-soft h-full flex flex-col">
-              <div className="flex items-center gap-3 mb-3">
-                {curso.concluido ? (
-                  <CheckCircle2 className="text-success flex-shrink-0" size={20} />
-                ) : curso.bloqueado ? (
-                  <Lock className="text-outline flex-shrink-0" size={20} />
+            <div className="h-full flex flex-col">
+              <div className="relative aspect-[2/3] rounded-card-lg overflow-hidden shadow-soft bg-surface-container-high">
+                {curso.capaVerticalUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={curso.capaVerticalUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <PlayCircle className="text-primary flex-shrink-0" size={20} />
+                  <div className="w-full h-full flex items-center justify-center">
+                    <PlayCircle className="text-outline" size={40} />
+                  </div>
                 )}
-                <h3 className="text-lg font-headline font-bold text-on-surface flex-1">{curso.nome}</h3>
+
+                {curso.bloqueado && (
+                  <div className="absolute inset-0 bg-on-background/60 flex items-center justify-center">
+                    <Lock className="text-white" size={28} />
+                  </div>
+                )}
+
+                {curso.concluido && (
+                  <div className="absolute top-2 right-2 bg-success text-on-primary rounded-full p-1">
+                    <CheckCircle2 size={16} />
+                  </div>
+                )}
+
+                {!curso.bloqueado && !curso.concluido && progressoCurso > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/30">
+                    <div className="h-full bg-primary" style={{ width: `${progressoCurso}%` }} />
+                  </div>
+                )}
               </div>
 
-              {curso.bloqueado ? (
-                <p className="text-sm text-on-surface-variant">Conclua o curso anterior para desbloquear.</p>
-              ) : (
-                <div className="mt-auto pt-2">
-                  <ProgressBar
-                    value={progressoCurso}
-                    label={`${concluidasDoCurso}/${aulasDoCurso.length} aulas`}
-                  />
-                </div>
-              )}
+              <h3 className="text-sm font-headline font-bold text-on-surface mt-3 leading-snug">
+                {curso.nome}
+              </h3>
+              <p className="text-xs text-on-surface-variant mt-1">
+                {curso.bloqueado
+                  ? "Bloqueado"
+                  : `${concluidasDoCurso}/${aulasDoCurso.length} aulas`}
+              </p>
             </div>
           );
 

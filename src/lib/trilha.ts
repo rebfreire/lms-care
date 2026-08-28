@@ -25,6 +25,8 @@ export interface CursoDaTrilha {
   ordem: number;
   bloqueiaProximo: boolean;
   certificadoAtivo: boolean;
+  capaUrl: string | null;
+  capaVerticalUrl: string | null;
   concluido: boolean;
   bloqueado: boolean;
   modulos: ModuloComAulas[];
@@ -70,7 +72,7 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
   const { data: trilhaCursos } = await supabase
     .from("trilhas_cursos")
     .select(
-      "ordem, bloqueia_proximo, cursos(id, nome, certificado_ativo, modulos(id, nome, ordem, aulas(id, titulo, ordem, video_id_cloudflare, texto_apoio, liberacao_agendada_em, turma_id)))",
+      "ordem, bloqueia_proximo, cursos(id, nome, certificado_ativo, capa_url, capa_vertical_url, modulos(id, nome, ordem, aulas(id, titulo, ordem, video_id_cloudflare, texto_apoio, liberacao_agendada_em, turma_id)))",
     )
     .eq("trilha_id", trilha.id)
     .order("ordem");
@@ -100,6 +102,8 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
       id: string;
       nome: string;
       certificado_ativo: boolean;
+      capa_url: string | null;
+      capa_vertical_url: string | null;
       modulos: {
         id: string;
         nome: string;
@@ -158,6 +162,8 @@ export async function getTrilhaDoAluno(usuarioId: string): Promise<TrilhaDoAluno
       ordem: tc.ordem,
       bloqueiaProximo: tc.bloqueia_proximo,
       certificadoAtivo: curso.certificado_ativo,
+      capaUrl: curso.capa_url,
+      capaVerticalUrl: curso.capa_vertical_url,
       concluido,
       bloqueado: false, // calculado abaixo, precisa da ordem completa primeiro
       modulos,
