@@ -56,7 +56,7 @@ export default async function QuizAlunoPage({ params }: { params: Promise<{ id: 
           Você já usou todas as {quiz.tentativas_permitidas} tentativa(s) permitidas.
         </div>
       ) : (
-        <QuizForm quizId={quiz.id} notaCorte={quiz.nota_corte} questoes={questoes} />
+        <QuizForm quizId={quiz.id} notaCorte={quiz.nota_corte} questoes={questoes} aulaId={aulaId} />
       )}
     </div>
   );

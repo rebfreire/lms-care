@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, XCircle } from "lucide-react";
 import Button from "@/design-system/atoms/Button";
 import { responderQuiz, type ResultadoQuiz } from "./actions";
@@ -20,9 +22,17 @@ interface QuizFormProps {
   quizId: string;
   notaCorte: number;
   questoes: Questao[];
+  aulaId: string;
 }
 
-export default function QuizForm({ quizId, notaCorte, questoes }: QuizFormProps) {
+export default function QuizForm({ quizId, notaCorte, questoes, aulaId }: QuizFormProps) {
+  const router = useRouter();
+
+  function sairDoQuiz() {
+    if (window.confirm("Sair do quiz agora? Suas respostas não serão salvas.")) {
+      router.push(`/aluno/aulas/${aulaId}`);
+    }
+  }
   const [resultado, formAction, isPending] = useActionState<ResultadoQuiz | string | null, FormData>(
     responderQuiz.bind(null, quizId),
     null,
@@ -67,6 +77,10 @@ export default function QuizForm({ quizId, notaCorte, questoes }: QuizFormProps)
             </ul>
           </div>
         ))}
+
+        <Link href={`/aluno/aulas/${aulaId}`} className="inline-block">
+          <Button variant="ghost">Voltar para a aula</Button>
+        </Link>
       </div>
     );
   }
@@ -96,9 +110,14 @@ export default function QuizForm({ quizId, notaCorte, questoes }: QuizFormProps)
         </div>
       ))}
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Enviando..." : "Enviar respostas"}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Enviando..." : "Enviar respostas"}
+        </Button>
+        <Button type="button" variant="ghost" onClick={sairDoQuiz}>
+          Sair do quiz
+        </Button>
+      </div>
     </form>
   );
 }
