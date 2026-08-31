@@ -38,7 +38,28 @@ interface DadosCertificado {
   };
 }
 
-async function gerarPdfCertificado(dados: DadosCertificado) {
+// Fontes padrão do pdf-lib só suportam WinAnsi, que não aceita marcas de
+// acento "soltas" (ex.: "a" + til combinável) — nomes vindos de import/CSV
+// às vezes chegam em NFD (decomposto) em vez de NFC, e quebram o encode.
+function normalizarTexto<T extends string | null>(texto: T): T {
+  return (texto?.normalize("NFC") ?? texto) as T;
+}
+
+async function gerarPdfCertificado(dadosBrutos: DadosCertificado) {
+  const dados: DadosCertificado = {
+    ...dadosBrutos,
+    nomeAluno: normalizarTexto(dadosBrutos.nomeAluno),
+    nomeCurso: normalizarTexto(dadosBrutos.nomeCurso),
+    nomeEmpresa: normalizarTexto(dadosBrutos.nomeEmpresa),
+    titulo: normalizarTexto(dadosBrutos.titulo),
+    textoCorpo: normalizarTexto(dadosBrutos.textoCorpo),
+    assinante: {
+      nome: normalizarTexto(dadosBrutos.assinante.nome),
+      cargo: normalizarTexto(dadosBrutos.assinante.cargo),
+      assinaturaUrl: dadosBrutos.assinante.assinaturaUrl,
+    },
+  };
+
   const doc = await PDFDocument.create();
   const page = doc.addPage([842, 595]); // A4 paisagem
   const { width, height } = page.getSize();

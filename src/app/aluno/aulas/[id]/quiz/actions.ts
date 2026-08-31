@@ -78,8 +78,14 @@ export async function responderQuiz(
   }
 
   if (aprovado) {
-    const cursoId = await getCursoIdDaAula(quiz.aula_id);
-    if (cursoId) await verificarEGerarCertificadoDoCurso(usuario.id, cursoId);
+    try {
+      const cursoId = await getCursoIdDaAula(quiz.aula_id);
+      if (cursoId) await verificarEGerarCertificadoDoCurso(usuario.id, cursoId);
+    } catch (erro) {
+      // A tentativa já foi salva acima — o aluno precisa ver o resultado
+      // mesmo que a geração do certificado falhe.
+      console.error("Falha ao gerar certificado:", erro);
+    }
   }
 
   return { nota, aprovado, corretas };

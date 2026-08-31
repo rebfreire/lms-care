@@ -38,7 +38,14 @@ export async function salvarProgresso(aulaId: string, percentual: number, posica
 
   if (concluida && !existente?.concluida) {
     revalidatePath("/aluno");
-    const cursoId = await getCursoIdDaAula(aulaId);
-    if (cursoId) await verificarEGerarCertificadoDoCurso(usuario.id, cursoId);
+    try {
+      const cursoId = await getCursoIdDaAula(aulaId);
+      if (cursoId) await verificarEGerarCertificadoDoCurso(usuario.id, cursoId);
+    } catch (erro) {
+      // Progresso da aula já foi salvo acima — uma falha ao gerar o
+      // certificado não pode derrubar a tela do aluno. Fica pra tentar de
+      // novo na próxima aula concluída ou tentativa de quiz.
+      console.error("Falha ao gerar certificado:", erro);
+    }
   }
 }
