@@ -93,6 +93,40 @@ export async function criarQuestao(
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/quiz`);
 }
 
+export async function editarQuestao(
+  questaoId: string,
+  cursoId: string,
+  aulaId: string,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const enunciado = String(formData.get("enunciado") ?? "").trim();
+  const corretaIndex = Number(formData.get("correta") ?? -1);
+  const alternativas = formData.getAll("alternativa").map((v) => String(v).trim());
+
+  if (!enunciado || alternativas.length < 2 || alternativas.some((a) => !a) || corretaIndex < 0) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await supabase.from("questoes").update({ enunciado }).eq("id", questaoId);
+
+  // Mais simples reconstruir as alternativas do que tentar casar as
+  // existentes por posição — o form já garante o índice da correta.
+  await supabase.from("alternativas").delete().eq("questao_id", questaoId);
+  await supabase.from("alternativas").insert(
+    alternativas.map((texto, i) => ({
+      questao_id: questaoId,
+      texto,
+      correta: i === corretaIndex,
+    })),
+  );
+
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/quiz`);
+}
+
 export async function removerQuestao(questaoId: string, cursoId: string, aulaId: string) {
   const supabase = await createClient();
   await supabase.from("questoes").delete().eq("id", questaoId);

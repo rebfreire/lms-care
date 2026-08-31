@@ -26,6 +26,33 @@ export async function criarTrilha(_prevState: string | null, formData: FormData)
   redirect(`/admin/trilhas/${data.id}`);
 }
 
+export async function editarTrilha(trilhaId: string, _prevState: string | null, formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  const descricao = String(formData.get("descricao") ?? "").trim();
+  if (!nome) return "Nome da trilha é obrigatório.";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("trilhas").update({ nome, descricao }).eq("id", trilhaId);
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath(`/admin/trilhas/${trilhaId}`);
+  redirect(`/admin/trilhas/${trilhaId}`);
+}
+
+export async function excluirTrilha(trilhaId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const supabase = await createClient();
+  await supabase.from("trilhas").delete().eq("id", trilhaId);
+
+  revalidatePath("/admin/trilhas");
+  redirect("/admin/trilhas");
+}
+
 export async function adicionarCursoNaTrilha(trilhaId: string, formData: FormData) {
   const cursoId = String(formData.get("curso_id") ?? "");
   if (!cursoId) return;

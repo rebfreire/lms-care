@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUp, ArrowDown, Lock, LockOpen, X } from "lucide-react";
+import { ArrowUp, ArrowDown, Lock, LockOpen, X, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
@@ -9,6 +10,7 @@ import {
   alternarBloqueio,
   moverCurso,
 } from "../actions";
+import ExcluirTrilhaButton from "./ExcluirTrilhaButton";
 
 export default async function TrilhaDetalhePage({
   params,
@@ -44,7 +46,21 @@ export default async function TrilhaDetalhePage({
 
   return (
     <div>
-      <PageHeader title={trilha.nome} description={trilha.descricao ?? undefined} />
+      <PageHeader
+        title={trilha.nome}
+        description={trilha.descricao ?? undefined}
+        actions={
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/admin/trilhas/${id}/editar`}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-primary"
+            >
+              <Pencil size={16} /> Editar trilha
+            </Link>
+            <ExcluirTrilhaButton trilhaId={id} nome={trilha.nome} />
+          </div>
+        }
+      />
 
       <div className="bg-surface rounded-card-lg p-6 shadow-soft space-y-3 mb-6">
         {trilhaCursos?.length === 0 && (

@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import { CheckCircle2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
 import FormField from "@/design-system/molecules/FormField";
-import { criarQuiz, removerQuestao } from "./actions";
+import { criarQuiz } from "./actions";
 import NovaQuestaoForm from "./NovaQuestaoForm";
 import EditarQuizConfigForm from "./EditarQuizConfigForm";
+import QuestaoItem from "./QuestaoItem";
 
 export default async function QuizAulaPage({
   params,
@@ -88,33 +88,15 @@ export default async function QuizAulaPage({
 
       <div className="space-y-4 mb-6">
         {questoes?.map((q, i) => (
-          <div key={q.id} className="bg-surface rounded-card-lg p-6 shadow-soft">
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <p className="text-sm font-semibold text-on-surface">
-                {i + 1}. {q.enunciado}
-              </p>
-              <form action={removerQuestao.bind(null, q.id, cursoId, aulaId)}>
-                <button type="submit" className="text-on-surface-variant hover:text-error flex-shrink-0">
-                  <Trash2 size={16} />
-                </button>
-              </form>
-            </div>
-            <ul className="space-y-1">
-              {(q.alternativas as { id: string; texto: string; correta: boolean }[])?.map((alt) => (
-                <li
-                  key={alt.id}
-                  className={`text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 ${
-                    alt.correta
-                      ? "bg-success-container text-success font-semibold"
-                      : "bg-surface-container-low text-on-surface-variant"
-                  }`}
-                >
-                  {alt.correta && <CheckCircle2 size={14} />}
-                  {alt.texto}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <QuestaoItem
+            key={q.id}
+            questaoId={q.id}
+            ordem={i + 1}
+            enunciado={q.enunciado}
+            alternativas={q.alternativas as { id: string; texto: string; correta: boolean }[]}
+            cursoId={cursoId}
+            aulaId={aulaId}
+          />
         ))}
         {(!questoes || questoes.length === 0) && (
           <p className="text-on-surface-variant">Nenhuma questão ainda — adicione abaixo.</p>
