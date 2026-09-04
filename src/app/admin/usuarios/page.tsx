@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
 import CriarTurmaForm from "./CriarTurmaForm";
+import TurmaItem from "./TurmaItem";
 import AtribuirTrilhaTurma from "./AtribuirTrilhaTurma";
 import { removerAtribuicao } from "./actions";
 
@@ -99,9 +100,7 @@ export default async function UsuariosPage() {
             </h3>
             <ul className="space-y-1 mb-4">
               {turmas?.map((t) => (
-                <li key={t.id} className="text-sm text-on-surface px-3 py-1.5 rounded-lg bg-surface-container-low">
-                  {t.nome}
-                </li>
+                <TurmaItem key={t.id} turmaId={t.id} nome={t.nome} />
               ))}
               {(!turmas || turmas.length === 0) && (
                 <p className="text-sm text-on-surface-variant">Nenhuma turma ainda.</p>

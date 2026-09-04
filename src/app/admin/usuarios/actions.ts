@@ -39,6 +39,31 @@ export async function criarTurma(_prevState: string | null, formData: FormData) 
   return null;
 }
 
+export async function editarTurma(turmaId: string, _prevState: string | null, formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (!nome) return "Nome da turma é obrigatório.";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("turmas").update({ nome }).eq("id", turmaId);
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath("/admin/usuarios");
+  return null;
+}
+
+export async function excluirTurma(turmaId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const supabase = await createClient();
+  await supabase.from("turmas").delete().eq("id", turmaId);
+
+  revalidatePath("/admin/usuarios");
+}
+
 async function obterOuCriarTurma(
   nome: string,
   empresaId: string,
