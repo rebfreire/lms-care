@@ -33,6 +33,7 @@ interface DadosCertificado {
   textoCorpo: string | null;
   assinante: {
     nome: string | null;
+    registro: string | null;
     cargo: string | null;
     assinaturaUrl: string | null;
   };
@@ -55,6 +56,7 @@ async function gerarPdfCertificado(dadosBrutos: DadosCertificado) {
     textoCorpo: normalizarTexto(dadosBrutos.textoCorpo),
     assinante: {
       nome: normalizarTexto(dadosBrutos.assinante.nome),
+      registro: normalizarTexto(dadosBrutos.assinante.registro),
       cargo: normalizarTexto(dadosBrutos.assinante.cargo),
       assinaturaUrl: dadosBrutos.assinante.assinaturaUrl,
     },
@@ -188,10 +190,23 @@ async function gerarPdfCertificado(dadosBrutos: DadosCertificado) {
       color: rgb(0.18, 0.18, 0.16),
     });
 
+    let yLinhaAssinatura = baseY - 34;
+
+    if (dados.assinante.registro) {
+      page.drawText(dados.assinante.registro, {
+        x: centralizar(dados.assinante.registro, fontCorpo, 10),
+        y: yLinhaAssinatura,
+        size: 10,
+        font: fontCorpo,
+        color: rgb(0.35, 0.35, 0.3),
+      });
+      yLinhaAssinatura -= 14;
+    }
+
     if (dados.assinante.cargo) {
       page.drawText(dados.assinante.cargo, {
         x: centralizar(dados.assinante.cargo, fontCorpo, 10),
-        y: baseY - 34,
+        y: yLinhaAssinatura,
         size: 10,
         font: fontCorpo,
         color: rgb(0.35, 0.35, 0.3),
@@ -243,6 +258,7 @@ export async function gerarCertificadoAmostra(empresaId: string) {
     textoCorpo: empresa.certificado_texto,
     assinante: {
       nome: "Nome de quem valida",
+      registro: null,
       cargo: "Cargo",
       assinaturaUrl: null,
     },
@@ -265,7 +281,7 @@ export async function verificarEGerarCertificadoDoCurso(usuarioId: string, curso
   const { data: curso } = await supabase
     .from("cursos")
     .select(
-      "id, nome, empresa_id, certificado_ativo, certificado_assinante_nome, certificado_assinante_cargo, certificado_assinatura_url, modulos(aulas(id))",
+      "id, nome, empresa_id, certificado_ativo, certificado_assinante_nome, certificado_assinante_registro, certificado_assinante_cargo, certificado_assinatura_url, modulos(aulas(id))",
     )
     .eq("id", cursoId)
     .single();
@@ -319,6 +335,7 @@ export async function verificarEGerarCertificadoDoCurso(usuarioId: string, curso
     textoCorpo: empresa.certificado_texto,
     assinante: {
       nome: curso.certificado_assinante_nome,
+      registro: curso.certificado_assinante_registro,
       cargo: curso.certificado_assinante_cargo,
       assinaturaUrl: curso.certificado_assinatura_url,
     },

@@ -36,6 +36,7 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
   const descricao = String(formData.get("descricao") ?? "").trim();
   const certificadoAtivo = formData.get("certificado_ativo") === "on";
   const assinanteNome = String(formData.get("assinante_nome") ?? "").trim();
+  const assinanteRegistro = String(formData.get("assinante_registro") ?? "").trim();
   const assinanteCargo = String(formData.get("assinante_cargo") ?? "").trim();
   if (!nome) return "Nome do curso é obrigatório.";
 
@@ -51,6 +52,7 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
     descricao,
     certificado_ativo: certificadoAtivo,
     certificado_assinante_nome: assinanteNome || null,
+    certificado_assinante_registro: assinanteRegistro || null,
     certificado_assinante_cargo: assinanteCargo || null,
   };
 

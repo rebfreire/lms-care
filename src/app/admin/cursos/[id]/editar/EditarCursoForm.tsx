@@ -14,6 +14,7 @@ interface EditarCursoFormProps {
   capaHorizontalAtual: string | null;
   capaVerticalAtual: string | null;
   assinanteNomeAtual: string | null;
+  assinanteRegistroAtual: string | null;
   assinanteCargoAtual: string | null;
   assinaturaUrlAtual: string | null;
 }
@@ -26,6 +27,7 @@ export default function EditarCursoForm({
   capaHorizontalAtual,
   capaVerticalAtual,
   assinanteNomeAtual,
+  assinanteRegistroAtual,
   assinanteCargoAtual,
   assinaturaUrlAtual,
 }: EditarCursoFormProps) {
@@ -108,22 +110,30 @@ export default function EditarCursoForm({
           em Configurações → Certificado. Aqui você define quem valida este curso específico.
         </p>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <FormField
             id="assinante_nome"
             name="assinante_nome"
             label="Nome de quem valida"
             defaultValue={assinanteNomeAtual ?? ""}
             placeholder="Dra. Fulana de Tal"
+            className="col-span-2"
           />
           <FormField
-            id="assinante_cargo"
-            name="assinante_cargo"
-            label="Cargo"
-            defaultValue={assinanteCargoAtual ?? ""}
-            placeholder="Coordenadora de T&D"
+            id="assinante_registro"
+            name="assinante_registro"
+            label="Registro (RQE, CRM...)"
+            defaultValue={assinanteRegistroAtual ?? ""}
+            placeholder="RQE: 30533"
           />
         </div>
+        <FormField
+          id="assinante_cargo"
+          name="assinante_cargo"
+          label="Cargo"
+          defaultValue={assinanteCargoAtual ?? ""}
+          placeholder="Coordenadora de T&D"
+        />
 
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
