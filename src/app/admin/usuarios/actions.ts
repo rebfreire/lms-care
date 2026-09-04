@@ -48,7 +48,7 @@ export async function enviarEmailAcesso(usuarioIds: string[]): Promise<Resultado
   // tentativas baterem no rate limit ao mesmo tempo.
   for (const usuario of usuarios ?? []) {
     const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, {
-      redirectTo: `${origem}/auth/callback?next=/redefinir-senha`,
+      redirectTo: `${origem}/auth/set-session?next=/redefinir-senha`,
     });
 
     resultados.push({
@@ -309,7 +309,7 @@ export async function criarUsuarioManual(
 
   const origem = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origem}/auth/callback?next=/redefinir-senha`,
+    redirectTo: `${origem}/auth/set-session?next=/redefinir-senha`,
   });
 
   revalidatePath("/admin/usuarios");
