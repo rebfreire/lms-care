@@ -21,6 +21,48 @@ export interface LinhaImportacao {
   erro?: string;
 }
 
+export interface ResultadoEnvioEmail {
+  usuarioId: string;
+  nome: string;
+  email: string;
+  ok: boolean;
+  erro?: string;
+}
+
+export async function enviarEmailAcesso(usuarioIds: string[]): Promise<ResultadoEnvioEmail[]> {
+  const usuarioAtual = await getUsuarioAtual();
+  if (!usuarioAtual || usuarioAtual.papel !== "admin") return [];
+  if (usuarioIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data: usuarios } = await supabase
+    .from("usuarios")
+    .select("id, nome, email")
+    .in("id", usuarioIds);
+
+  const origem = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const resultados: ResultadoEnvioEmail[] = [];
+
+  // Um de cada vez, de propósito — o serviço de e-mail padrão do Supabase
+  // tem limite de envio baixo, então disparar tudo em paralelo só faz mais
+  // tentativas baterem no rate limit ao mesmo tempo.
+  for (const usuario of usuarios ?? []) {
+    const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, {
+      redirectTo: `${origem}/auth/callback?next=/redefinir-senha`,
+    });
+
+    resultados.push({
+      usuarioId: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      ok: !error,
+      erro: error?.message,
+    });
+  }
+
+  return resultados;
+}
+
 export async function criarTurma(_prevState: string | null, formData: FormData) {
   const usuario = await getUsuarioAtual();
   if (!usuario || usuario.papel !== "admin") return "Sem permissão.";

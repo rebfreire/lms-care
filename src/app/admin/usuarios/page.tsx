@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Upload, Users2, UserPlus, Pencil } from "lucide-react";
+import { Upload, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
 import CriarTurmaForm from "./CriarTurmaForm";
 import TurmaItem from "./TurmaItem";
 import AtribuirTrilhaTurma from "./AtribuirTrilhaTurma";
+import UsuariosTable from "./UsuariosTable";
 import { removerAtribuicao } from "./actions";
 
 export default async function UsuariosPage() {
@@ -47,50 +48,18 @@ export default async function UsuariosPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
-                  <th className="px-6 py-3">Nome</th>
-                  <th className="px-6 py-3">E-mail</th>
-                  <th className="px-6 py-3">Turma</th>
-                  <th className="px-6 py-3">Papel</th>
-                  <th className="px-6 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {usuarios?.map((u) => (
-                  <tr key={u.id} className="border-b border-outline-variant last:border-0">
-                    <td className="px-6 py-3 text-on-surface">{u.nome}</td>
-                    <td className="px-6 py-3 text-on-surface-variant">{u.email}</td>
-                    <td className="px-6 py-3 text-on-surface-variant">
-                      {(u.usuarios_turmas as unknown as { turmas: { nome: string } }[])
-                        ?.map((ut) => ut.turmas?.nome)
-                        .filter(Boolean)
-                        .join(", ") || "—"}
-                    </td>
-                    <td className="px-6 py-3 text-on-surface-variant capitalize">{u.papel}</td>
-                    <td className="px-6 py-3">
-                      <Link
-                        href={`/admin/usuarios/${u.id}/editar`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-primary"
-                      >
-                        <Pencil size={12} /> editar
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {(!usuarios || usuarios.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
-                      <Users2 className="mx-auto mb-2 text-outline" size={24} />
-                      Nenhum usuário ainda — importe um CSV.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <UsuariosTable
+            usuarios={(usuarios ?? []).map((u) => ({
+              id: u.id,
+              nome: u.nome,
+              email: u.email,
+              papel: u.papel,
+              turma: (u.usuarios_turmas as unknown as { turmas: { nome: string } }[])
+                ?.map((ut) => ut.turmas?.nome)
+                .filter(Boolean)
+                .join(", "),
+            }))}
+          />
         </div>
 
         <div className="space-y-6">
