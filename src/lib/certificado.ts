@@ -248,19 +248,29 @@ export async function gerarCertificadoAmostra(empresaId: string) {
 
   if (!empresa) throw new Error("Empresa não encontrada.");
 
+  // Usa um assinante já configurado em algum curso, se existir, pra prévia
+  // refletir o que o aluno realmente vai ver — a assinatura é por curso.
+  const { data: cursoComAssinante } = await supabase
+    .from("cursos")
+    .select("nome, certificado_assinante_nome, certificado_assinante_registro, certificado_assinante_cargo, certificado_assinatura_url")
+    .eq("empresa_id", empresaId)
+    .not("certificado_assinante_nome", "is", null)
+    .limit(1)
+    .maybeSingle();
+
   return gerarPdfCertificado({
     nomeAluno: "Nome do Aluno",
-    nomeCurso: "Nome do Curso",
+    nomeCurso: cursoComAssinante?.nome ?? "Nome do Curso",
     nomeEmpresa: empresa.nome,
     corPrimaria: empresa.cor_primaria,
     logoUrl: empresa.logo_url,
     titulo: empresa.certificado_titulo,
     textoCorpo: empresa.certificado_texto,
     assinante: {
-      nome: "Nome de quem valida",
-      registro: null,
-      cargo: "Cargo",
-      assinaturaUrl: null,
+      nome: cursoComAssinante?.certificado_assinante_nome ?? "Nome de quem valida",
+      registro: cursoComAssinante?.certificado_assinante_registro ?? null,
+      cargo: cursoComAssinante?.certificado_assinante_cargo ?? "Cargo",
+      assinaturaUrl: cursoComAssinante?.certificado_assinatura_url ?? null,
     },
   });
 }
