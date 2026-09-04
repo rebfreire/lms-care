@@ -6,6 +6,7 @@ import { editarTurma, excluirTurma } from "./actions";
 
 export default function TurmaItem({ turmaId, nome }: { turmaId: string; nome: string }) {
   const [editando, setEditando] = useState(false);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [error, formAction, isPending] = useActionState(editarTurma.bind(null, turmaId), null);
 
   if (editando) {
@@ -39,6 +40,34 @@ export default function TurmaItem({ turmaId, nome }: { turmaId: string; nome: st
     );
   }
 
+  if (confirmandoExclusao) {
+    return (
+      <li className="rounded-lg bg-error-container/30 px-3 py-2">
+        <p className="text-xs text-on-surface mb-2">
+          Excluir <strong>{nome}</strong>? Remove os alunos dela e qualquer trilha atribuída por
+          turma.
+        </p>
+        <div className="flex items-center gap-2">
+          <form action={excluirTurma.bind(null, turmaId)}>
+            <button
+              type="submit"
+              className="rounded-pill bg-error text-on-error px-3 py-1 text-xs font-semibold hover:opacity-90"
+            >
+              Confirmar exclusão
+            </button>
+          </form>
+          <button
+            type="button"
+            onClick={() => setConfirmandoExclusao(false)}
+            className="text-xs font-semibold text-on-surface-variant hover:underline"
+          >
+            Cancelar
+          </button>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <li className="flex items-center justify-between gap-2 text-sm text-on-surface px-3 py-1.5 rounded-lg bg-surface-container-low group">
       <span className="flex-1 truncate">{nome}</span>
@@ -50,18 +79,13 @@ export default function TurmaItem({ turmaId, nome }: { turmaId: string; nome: st
         >
           <Pencil size={13} />
         </button>
-        <form
-          action={excluirTurma.bind(null, turmaId)}
-          onSubmit={(e) => {
-            if (!window.confirm(`Excluir a turma "${nome}"? Isso remove todos os alunos dela da turma e qualquer trilha atribuída por turma.`)) {
-              e.preventDefault();
-            }
-          }}
+        <button
+          type="button"
+          onClick={() => setConfirmandoExclusao(true)}
+          className="p-1 text-on-surface-variant hover:text-error"
         >
-          <button type="submit" className="p-1 text-on-surface-variant hover:text-error">
-            <Trash2 size={13} />
-          </button>
-        </form>
+          <Trash2 size={13} />
+        </button>
       </div>
     </li>
   );
