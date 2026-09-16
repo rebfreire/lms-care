@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Upload, UserPlus } from "lucide-react";
+import { Upload, UserPlus, History } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
@@ -32,6 +32,11 @@ export default async function UsuariosPage() {
         description="Cadastro manual — sem autoatendimento."
         actions={
           <div className="flex gap-2">
+            <Link href="/admin/usuarios/logs-envio">
+              <Button variant="secondary" className="inline-flex items-center gap-2">
+                <History size={18} /> Histórico de envios
+              </Button>
+            </Link>
             <Link href="/admin/usuarios/novo">
               <Button variant="secondary" className="inline-flex items-center gap-2">
                 <UserPlus size={18} /> Novo usuário

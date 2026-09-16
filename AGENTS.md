@@ -73,21 +73,32 @@ referência do estado atual, uso as migrações em ordem.
   combinável). Isso é invisível no navegador mas quebra libs como pdf-lib (`WinAnsi
   cannot encode`). `src/lib/certificado.ts` normaliza pra NFC antes de desenhar texto no
   PDF; ao mexer com nomes de curso/usuário/empresa em contexto novo, considere o mesmo.
-- **Server Actions que disparam e-mail pra OUTRA pessoa (não quem está logado)**: o
-  fluxo de recuperação de senha do Supabase usa PKCE por padrão, que guarda um cookie de
-  verificação no navegador de quem *iniciou* o pedido. Isso funciona pro fluxo de
-  autoatendimento (`/recuperar-senha`, o próprio usuário pedindo pra si) mas **quebra**
-  quando o admin dispara pra outra pessoa (criar usuário, ou o envio em massa em
-  Usuários e turmas) — o link chega com tokens no `#hash` da URL (fluxo implícito) em
-  vez de um `?code=` trocável no servidor. Por isso existe
-  `src/app/auth/set-session/page.tsx`, uma página client-side que lê esse hash e cria a
-  sessão direto no navegador de quem clicou. Use `/auth/set-session?next=...` como
-  `redirectTo` em qualquer novo fluxo onde o admin age em nome de outro usuário;
-  `/auth/callback` (PKCE, server-side) continua certo pro autoatendimento.
-- **SendGrid + click tracking**: click tracking do SendGrid reescreve o link do e-mail
-  pra rastrear cliques — como o link de senha do Supabase é de uso único, um scanner de
-  segurança de e-mail que pré-visita o link antes do usuário real consome ele. Click
-  tracking está desligado no SendGrid por causa disso; não reative sem avisar.
+- **E-mail de acesso pra OUTRA pessoa (não quem está logado)**: `criarUsuarioManual` e
+  `enviarEmailAcesso` (ambos em `src/app/admin/usuarios/actions.ts`) mandam a senha
+  provisória **direto no corpo do e-mail** (via `src/lib/email.ts`, API do SendGrid por
+  `fetch`, sem passar pelo Supabase Auth) em vez de um link de redefinição — o usuário
+  troca depois se quiser em "Trocar senha" na sidebar (`/redefinir-senha`, que só exige
+  sessão ativa, não é mais exclusivo de fluxo de recuperação). Isso existe por causa de
+  dois problemas que o link de redefinição do Supabase tem quando é o **admin** quem
+  dispara (não o próprio usuário):
+  - PKCE guarda um cookie de verificação no navegador de quem *inicia* o pedido — como é
+    o admin quem inicia, não quem clica, o link cai no fluxo implícito (`#hash` na URL)
+    em vez de `?code=` trocável no servidor. `src/app/auth/set-session/page.tsx` existe
+    pra ler esse hash e criar sessão client-side, e ainda é o `redirectTo` certo pro
+    autoatendimento em `/recuperar-senha` (que continua usando `/auth/callback`, PKCE
+    server-side, porque lá quem inicia e quem clica são a mesma pessoa/navegador).
+  - Link de senha é de uso único — um e-mail disparado em massa esbarra no rate limit da
+    API do SendGrid se disparado em paralelo (usar delay entre envios,
+    `INTERVALO_ENTRE_ENVIOS_MS` em `actions.ts`), e além disso, com click tracking do
+    SendGrid ligado, um scanner de segurança de e-mail que pré-visita o link antes do
+    usuário real consome o token. Click tracking está desligado no SendGrid por causa
+    disso; não reative sem avisar.
+  - Cada tentativa de envio (sucesso ou erro) é gravada em `logs_envio_email`
+    (migração 011) — visível em Usuários e turmas → Histórico de envios — porque antes
+    disso não tinha como saber quem não recebeu.
+  - Precisa de `SENDGRID_API_KEY` / `SENDGRID_FROM_EMAIL` / `SENDGRID_FROM_NOME` no
+    `.env.local` e na Vercel — chave separada da configurada no SMTP do Supabase Auth
+    (o Supabase não repassa a própria chave pro nosso código).
 - **Confirmação de ações destrutivas**: não use `window.confirm()` — navegadores (Chrome
   principalmente) podem suprimir diálogos repetidos silenciosamente numa mesma página,
   fazendo a ação "não fazer nada" sem nenhum aviso. Use um estado de confirmação inline

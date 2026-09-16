@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { parseCsv, gerarSenhaTemporaria } from "@/lib/csv";
+import { enviarEmail, emailAcessoHtml } from "@/lib/email";
+import { getEmpresaBranding } from "@/lib/empresa";
 
 export interface ResultadoCriacao {
   status: "criado";
@@ -29,38 +31,119 @@ export interface ResultadoEnvioEmail {
   erro?: string;
 }
 
+function aguardar(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// SendGrid limita a taxa de disparo por segundo (varia por plano, mas o padrão
+// gratuito é baixo o suficiente pra estourar em disparos em massa); esse
+// intervalo entre envios evita bater no rate limit. Se ainda assim aparecerem
+// erros de "too many requests" no log, aumente esse valor.
+const INTERVALO_ENTRE_ENVIOS_MS = 1200;
+
 export async function enviarEmailAcesso(usuarioIds: string[]): Promise<ResultadoEnvioEmail[]> {
   const usuarioAtual = await getUsuarioAtual();
   if (!usuarioAtual || usuarioAtual.papel !== "admin") return [];
   if (usuarioIds.length === 0) return [];
 
   const supabase = await createClient();
+  const admin = createAdminClient();
   const { data: usuarios } = await supabase
     .from("usuarios")
     .select("id, nome, email")
     .in("id", usuarioIds);
 
   const origem = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const empresa = await getEmpresaBranding(usuarioAtual.empresaId);
   const resultados: ResultadoEnvioEmail[] = [];
 
-  // Um de cada vez, de propósito — o serviço de e-mail padrão do Supabase
-  // tem limite de envio baixo, então disparar tudo em paralelo só faz mais
-  // tentativas baterem no rate limit ao mesmo tempo.
-  for (const usuario of usuarios ?? []) {
-    const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, {
-      redirectTo: `${origem}/auth/set-session?next=/redefinir-senha`,
-    });
+  // Um de cada vez, de propósito — a API do SendGrid também tem limite de
+  // requisições por segundo, e disparar tudo em paralelo faz várias baterem
+  // no rate limit ao mesmo tempo (foi o que causou usuários não receberem
+  // e-mail num envio em massa anterior, sem nenhum registro de quem falhou).
+  // Em vez de mandar um link de redefinição (que depende de sessão PKCE e é
+  // de uso único — frágil quando disparado pelo admin pra outra pessoa),
+  // manda a senha provisória direto no e-mail; o usuário troca depois se
+  // quiser em "Minha conta". Cada resultado é gravado em logs_envio_email.
+  for (let i = 0; i < (usuarios ?? []).length; i++) {
+    const usuario = usuarios![i];
+
+    if (i > 0) await aguardar(INTERVALO_ENTRE_ENVIOS_MS);
+
+    const senha = gerarSenhaTemporaria();
+    const { error: erroSenha } = await admin.auth.admin.updateUserById(usuario.id, { password: senha });
+
+    let ok = false;
+    let erro = erroSenha?.message;
+
+    if (!erroSenha) {
+      const envio = await enviarEmail({
+        to: usuario.email,
+        subject: `Seu acesso à plataforma ${empresa?.nome ?? "Care"}`,
+        html: emailAcessoHtml({
+          nomeUsuario: usuario.nome,
+          email: usuario.email,
+          senha,
+          loginUrl: `${origem}/login`,
+          empresaNome: empresa?.nome ?? "Care",
+          logoUrl: empresa?.logoUrl ?? null,
+          corPrimaria: empresa?.corPrimaria ?? null,
+        }),
+      });
+      ok = envio.ok;
+      erro = envio.erro;
+    }
 
     resultados.push({
       usuarioId: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
-      ok: !error,
-      erro: error?.message,
+      ok,
+      erro,
+    });
+
+    await supabase.from("logs_envio_email").insert({
+      empresa_id: usuarioAtual.empresaId,
+      usuario_id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      ok,
+      erro: erro ?? null,
+      enviado_por: usuarioAtual.id,
     });
   }
 
   return resultados;
+}
+
+export interface LogEnvioEmail {
+  id: string;
+  nome: string;
+  email: string;
+  ok: boolean;
+  erro: string | null;
+  criadoEm: string;
+}
+
+export async function listarLogsEnvioEmail(): Promise<LogEnvioEmail[]> {
+  const usuarioAtual = await getUsuarioAtual();
+  if (!usuarioAtual || usuarioAtual.papel !== "admin") return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("logs_envio_email")
+    .select("id, nome, email, ok, erro, criado_em")
+    .order("criado_em", { ascending: false })
+    .limit(200);
+
+  return (data ?? []).map((l) => ({
+    id: l.id,
+    nome: l.nome,
+    email: l.email,
+    ok: l.ok,
+    erro: l.erro,
+    criadoEm: l.criado_em,
+  }));
 }
 
 export async function criarTurma(_prevState: string | null, formData: FormData) {
@@ -275,8 +358,10 @@ export async function criarUsuarioManual(
   if (!nome || !email) return "Nome e e-mail são obrigatórios.";
 
   const admin = createAdminClient();
-  // Senha aleatória e descartada — o aluno nunca chega a saber dela, define
-  // a própria senha pelo link de e-mail enviado logo abaixo.
+  // Vai de senha provisória mandada direto no e-mail (em vez de link de
+  // redefinição) — o link mágico do Supabase depende de PKCE de sessão e é
+  // de uso único, o que quebra quando disparado pelo admin pra outra pessoa
+  // (ver AGENTS.md). O usuário troca a senha depois se quiser, em "Minha conta".
   const senhaInicial = gerarSenhaTemporaria();
 
   const { data: novoAuth, error: erroAuth } = await admin.auth.admin.createUser({
@@ -308,8 +393,29 @@ export async function criarUsuarioManual(
   }
 
   const origem = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origem}/auth/set-session?next=/redefinir-senha`,
+  const empresa = await getEmpresaBranding(usuario.empresaId);
+  const envio = await enviarEmail({
+    to: email,
+    subject: `Seu acesso à plataforma ${empresa?.nome ?? "Care"}`,
+    html: emailAcessoHtml({
+      nomeUsuario: nome,
+      email,
+      senha: senhaInicial,
+      loginUrl: `${origem}/login`,
+      empresaNome: empresa?.nome ?? "Care",
+      logoUrl: empresa?.logoUrl ?? null,
+      corPrimaria: empresa?.corPrimaria ?? null,
+    }),
+  });
+
+  await supabase.from("logs_envio_email").insert({
+    empresa_id: usuario.empresaId,
+    usuario_id: novoAuth.user.id,
+    nome,
+    email,
+    ok: envio.ok,
+    erro: envio.erro ?? null,
+    enviado_por: usuario.id,
   });
 
   revalidatePath("/admin/usuarios");

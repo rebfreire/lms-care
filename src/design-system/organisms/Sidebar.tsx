@@ -84,6 +84,12 @@ export default function Sidebar({
         {usuarioNome && (
           <p className="px-4 py-2 text-xs text-on-surface-variant truncate">{usuarioNome}</p>
         )}
+        <Link
+          href="/redefinir-senha"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors duration-200 text-sm"
+        >
+          Trocar senha
+        </Link>
         <form action={logout}>
           <button
             type="submit"
