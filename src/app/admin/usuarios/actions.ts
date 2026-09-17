@@ -146,6 +146,57 @@ export async function listarLogsEnvioEmail(): Promise<LogEnvioEmail[]> {
   }));
 }
 
+export interface StatusAcessoUsuario {
+  id: string;
+  nome: string;
+  email: string;
+  ultimoEnvioOk: boolean | null;
+  ultimoEnvioEm: string | null;
+  primeiroAcessoEm: string | null;
+  senhaAlteradaEm: string | null;
+}
+
+export async function listarStatusAcesso(): Promise<StatusAcessoUsuario[]> {
+  const usuarioAtual = await getUsuarioAtual();
+  if (!usuarioAtual || usuarioAtual.papel !== "admin") return [];
+
+  const supabase = await createClient();
+
+  const [{ data: usuarios }, { data: logs }, { data: eventos }] = await Promise.all([
+    supabase.from("usuarios").select("id, nome, email, senha_alterada_em").order("nome"),
+    supabase
+      .from("logs_envio_email")
+      .select("usuario_id, ok, criado_em")
+      .order("criado_em", { ascending: false }),
+    supabase.from("eventos_acesso").select("usuario_id, ocorrido_em").order("ocorrido_em", { ascending: true }),
+  ]);
+
+  const ultimoEnvioPorUsuario = new Map<string, { ok: boolean; criadoEm: string }>();
+  for (const log of logs ?? []) {
+    if (!log.usuario_id || ultimoEnvioPorUsuario.has(log.usuario_id)) continue;
+    ultimoEnvioPorUsuario.set(log.usuario_id, { ok: log.ok, criadoEm: log.criado_em });
+  }
+
+  const primeiroAcessoPorUsuario = new Map<string, string>();
+  for (const evento of eventos ?? []) {
+    if (primeiroAcessoPorUsuario.has(evento.usuario_id)) continue;
+    primeiroAcessoPorUsuario.set(evento.usuario_id, evento.ocorrido_em);
+  }
+
+  return (usuarios ?? []).map((u) => {
+    const envio = ultimoEnvioPorUsuario.get(u.id);
+    return {
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      ultimoEnvioOk: envio?.ok ?? null,
+      ultimoEnvioEm: envio?.criadoEm ?? null,
+      primeiroAcessoEm: primeiroAcessoPorUsuario.get(u.id) ?? null,
+      senhaAlteradaEm: u.senha_alterada_em,
+    };
+  });
+}
+
 export async function criarTurma(_prevState: string | null, formData: FormData) {
   const usuario = await getUsuarioAtual();
   if (!usuario || usuario.papel !== "admin") return "Sem permissão.";

@@ -16,5 +16,9 @@ export async function definirNovaSenha(_prevState: string | null, formData: Form
   if (error) return `Não foi possível trocar a senha: ${error.message}`;
 
   const usuario = await getUsuarioAtual();
+  if (usuario) {
+    await supabase.from("usuarios").update({ senha_alterada_em: new Date().toISOString() }).eq("id", usuario.id);
+  }
+
   redirect(usuario?.papel === "admin" ? "/admin" : "/aluno");
 }
