@@ -31,7 +31,7 @@ export default async function UsuariosPage() {
         title="Usuários e turmas"
         description="Cadastro manual — sem autoatendimento."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link href="/admin/usuarios/status-acesso">
               <Button variant="secondary" className="inline-flex items-center gap-2">
                 <ClipboardCheck size={18} /> Status de acesso

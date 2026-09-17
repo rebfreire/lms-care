@@ -30,7 +30,7 @@ export default async function AlunoLayout({ children }: { children: ReactNode })
         brandSubtitle="Minha área"
         usuarioNome={usuario.nome}
       />
-      <div className="pl-[17.5rem] pr-6 py-8">{children}</div>
+      <div className="px-4 py-6 lg:pl-[17.5rem] lg:pr-6 lg:py-8">{children}</div>
     </div>
   );
 }

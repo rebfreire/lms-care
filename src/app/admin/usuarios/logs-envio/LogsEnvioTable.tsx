@@ -25,7 +25,7 @@ export default function LogsEnvioTable({ logs }: { logs: LogEnvioEmail[] }) {
   const totalErros = logs.filter((l) => !l.ok).length;
 
   return (
-    <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden">
+    <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden overflow-x-auto">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4 border-b border-outline-variant">
         <div className="relative flex-1">
           <Search

@@ -63,7 +63,7 @@ export default function StatusAcessoTable({ usuarios }: { usuarios: StatusAcesso
         </div>
       </div>
 
-      <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden">
+      <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden overflow-x-auto">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4 border-b border-outline-variant">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />

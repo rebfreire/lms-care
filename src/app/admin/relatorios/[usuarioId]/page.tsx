@@ -236,7 +236,7 @@ export default async function FichaAlunoPage({
           <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">
             Resultados de quiz
           </h3>
-          <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden">
+          <div className="bg-surface rounded-card-lg shadow-soft overflow-hidden overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
