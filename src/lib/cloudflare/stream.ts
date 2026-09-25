@@ -34,3 +34,23 @@ export async function createDirectUpload(): Promise<DirectUploadResult> {
 
   return { uid: json.result.uid, uploadURL: json.result.uploadURL };
 }
+
+// Best-effort: se falhar (vídeo já apagado, token sem permissão), só registra — o
+// vínculo com a aula já foi desfeito no banco, então o aluno não vê mais o vídeo.
+export async function deleteVideo(uid: string): Promise<void> {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_STREAM_API_TOKEN;
+  if (!accountId || !token) return;
+
+  try {
+    const res = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${uid}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok && res.status !== 404) {
+      console.error(`Falha ao apagar vídeo ${uid} no Cloudflare Stream: HTTP ${res.status}`);
+    }
+  } catch (e) {
+    console.error(`Falha ao apagar vídeo ${uid} no Cloudflare Stream:`, e);
+  }
+}

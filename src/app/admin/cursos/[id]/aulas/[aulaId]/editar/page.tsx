@@ -4,6 +4,7 @@ import { getUsuarioAtual } from "@/lib/supabase/auth";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import EditarAulaForm from "./EditarAulaForm";
 import MateriaisSection from "./MateriaisSection";
+import VideoSection from "./VideoSection";
 
 function paraDatetimeLocal(iso: string | null): string {
   if (!iso) return "";
@@ -24,7 +25,7 @@ export default async function EditarAulaPage({
   const [{ data: aula }, { data: materiais }, { data: turmas }] = await Promise.all([
     supabase
       .from("aulas")
-      .select("id, titulo, texto_apoio, liberacao_agendada_em, turma_id")
+      .select("id, titulo, texto_apoio, liberacao_agendada_em, turma_id, video_id_cloudflare")
       .eq("id", aulaId)
       .single(),
     supabase
@@ -50,6 +51,7 @@ export default async function EditarAulaPage({
           turmaIdAtual={aula.turma_id ?? ""}
           turmas={turmas ?? []}
         />
+        <VideoSection cursoId={cursoId} aulaId={aula.id} videoId={aula.video_id_cloudflare} />
         <MateriaisSection cursoId={cursoId} aulaId={aula.id} materiais={materiais ?? []} />
       </div>
     </div>

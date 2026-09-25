@@ -14,6 +14,13 @@ export async function login(_prevState: string | null, formData: FormData) {
   });
 
   if (error || !data.user) {
+    console.error("Falha no login:", error?.status, error?.code, error?.message);
+    if (error?.status === 429 || error?.code === "over_request_rate_limit") {
+      return "Muitas tentativas de login seguidas. Aguarde alguns minutos e tente de novo.";
+    }
+    if (error && error.code !== "invalid_credentials") {
+      return `Não foi possível entrar agora (${error.message}). Tente de novo em instantes.`;
+    }
     return "E-mail ou senha inválidos.";
   }
 

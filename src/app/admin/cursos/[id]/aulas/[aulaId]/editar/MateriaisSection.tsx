@@ -1,13 +1,6 @@
-import { FileText, Link2, Trash2 } from "lucide-react";
 import Button from "@/design-system/atoms/Button";
-import { adicionarMaterialArquivo, adicionarMaterialLink, removerMaterial } from "../../../../actions";
-
-interface Material {
-  id: string;
-  tipo: "arquivo" | "link";
-  nome: string;
-  url: string;
-}
+import { adicionarMaterialArquivo, adicionarMaterialLink } from "../../../../actions";
+import MaterialItem, { type Material } from "./MaterialItem";
 
 interface MateriaisSectionProps {
   cursoId: string;
@@ -25,29 +18,7 @@ export default function MateriaisSection({ cursoId, aulaId, materiais }: Materia
       {materiais.length > 0 && (
         <ul className="space-y-2">
           {materiais.map((m) => (
-            <li
-              key={m.id}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-surface-container-low"
-            >
-              {m.tipo === "arquivo" ? (
-                <FileText size={16} className="text-on-surface-variant flex-shrink-0" />
-              ) : (
-                <Link2 size={16} className="text-on-surface-variant flex-shrink-0" />
-              )}
-              <a
-                href={m.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-on-surface flex-1 hover:text-primary truncate"
-              >
-                {m.nome}
-              </a>
-              <form action={removerMaterial.bind(null, m.id, cursoId, aulaId)}>
-                <button type="submit" className="text-on-surface-variant hover:text-error flex-shrink-0">
-                  <Trash2 size={14} />
-                </button>
-              </form>
-            </li>
+            <MaterialItem key={m.id} material={m} cursoId={cursoId} aulaId={aulaId} />
           ))}
         </ul>
       )}

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
-import { createDirectUpload } from "@/lib/cloudflare/stream";
+import { createDirectUpload, deleteVideo } from "@/lib/cloudflare/stream";
 
 export async function criarCurso(_prevState: string | null, formData: FormData) {
   const usuario = await getUsuarioAtual();
@@ -147,13 +147,27 @@ export async function criarModulo(cursoId: string, formData: FormData) {
   revalidatePath(`/admin/cursos/${cursoId}`);
 }
 
-export async function iniciarUploadVideo(aulaId: string, cursoId: string) {
+// Só cria a URL de upload no Cloudflare — a aula só passa a apontar pro vídeo novo
+// em confirmarUploadVideo, depois que o navegador terminou de enviar. Assim um upload
+// que falha no meio (ou é cancelado) não deixa a aula sem o vídeo antigo.
+export async function iniciarUploadVideo() {
   const usuario = await getUsuarioAtual();
   if (!usuario || usuario.papel !== "admin") throw new Error("Sem permissão.");
 
-  const { uid, uploadURL } = await createDirectUpload();
+  return createDirectUpload();
+}
+
+export async function confirmarUploadVideo(aulaId: string, cursoId: string, uid: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") throw new Error("Sem permissão.");
 
   const supabase = await createClient();
+  const { data: aula } = await supabase
+    .from("aulas")
+    .select("video_id_cloudflare")
+    .eq("id", aulaId)
+    .single();
+
   const { error } = await supabase
     .from("aulas")
     .update({ video_id_cloudflare: uid })
@@ -161,8 +175,35 @@ export async function iniciarUploadVideo(aulaId: string, cursoId: string) {
 
   if (error) throw new Error(error.message);
 
+  const anterior = aula?.video_id_cloudflare;
+  if (anterior && anterior !== uid) await deleteVideo(anterior);
+
   revalidatePath(`/admin/cursos/${cursoId}`);
-  return uploadURL;
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
+}
+
+export async function removerVideo(aulaId: string, cursoId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const supabase = await createClient();
+  const { data: aula } = await supabase
+    .from("aulas")
+    .select("video_id_cloudflare")
+    .eq("id", aulaId)
+    .single();
+
+  const { error } = await supabase
+    .from("aulas")
+    .update({ video_id_cloudflare: null })
+    .eq("id", aulaId);
+
+  if (error) return;
+
+  if (aula?.video_id_cloudflare) await deleteVideo(aula.video_id_cloudflare);
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
 }
 
 export async function criarAula(cursoId: string, moduloId: string, formData: FormData) {
@@ -198,16 +239,8 @@ export async function adicionarMaterialArquivo(
   const arquivo = formData.get("arquivo") as File | null;
   if (!arquivo || arquivo.size === 0) return;
 
-  const admin = createAdminClient();
-  const caminho = `${aulaId}/${Date.now()}-${arquivo.name}`;
-
-  const { error: erroUpload } = await admin.storage
-    .from("materiais")
-    .upload(caminho, arquivo, { contentType: arquivo.type });
-
-  if (erroUpload) return;
-
-  const url = admin.storage.from("materiais").getPublicUrl(caminho).data.publicUrl;
+  const url = await enviarArquivoMaterial(aulaId, arquivo);
+  if (!url) return;
 
   const supabase = await createClient();
   await supabase.from("aula_materiais").insert({
@@ -239,8 +272,88 @@ export async function adicionarMaterialLink(aulaId: string, cursoId: string, for
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
 }
 
-export async function removerMaterial(materialId: string, cursoId: string, aulaId: string) {
+async function enviarArquivoMaterial(aulaId: string, arquivo: File): Promise<string | null> {
+  const admin = createAdminClient();
+  const caminho = `${aulaId}/${Date.now()}-${arquivo.name}`;
+
+  const { error } = await admin.storage
+    .from("materiais")
+    .upload(caminho, arquivo, { contentType: arquivo.type });
+
+  if (error) return null;
+  return admin.storage.from("materiais").getPublicUrl(caminho).data.publicUrl;
+}
+
+// A URL pública tem o formato .../storage/v1/object/public/materiais/<caminho>.
+// Best-effort: se não achar/apagar o arquivo, o registro já saiu do banco mesmo assim.
+async function apagarArquivoMaterial(url: string) {
+  const marcador = "/object/public/materiais/";
+  const i = url.indexOf(marcador);
+  if (i === -1) return;
+  const caminho = decodeURIComponent(url.slice(i + marcador.length));
+  await createAdminClient().storage.from("materiais").remove([caminho]);
+}
+
+export async function editarMaterial(
+  materialId: string,
+  cursoId: string,
+  aulaId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
   const supabase = await createClient();
-  await supabase.from("aula_materiais").delete().eq("id", materialId);
+  const { data: material } = await supabase
+    .from("aula_materiais")
+    .select("tipo, url")
+    .eq("id", materialId)
+    .single();
+  if (!material) return "Material não encontrado.";
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (!nome) return "Nome é obrigatório.";
+
+  const atualizacao: { nome: string; url?: string } = { nome };
+
+  if (material.tipo === "link") {
+    const url = String(formData.get("url") ?? "").trim();
+    if (!url) return "URL é obrigatória.";
+    atualizacao.url = url;
+  } else {
+    const arquivo = formData.get("arquivo") as File | null;
+    if (arquivo && arquivo.size > 0) {
+      const url = await enviarArquivoMaterial(aulaId, arquivo);
+      if (!url) return "Erro ao enviar o arquivo novo.";
+      atualizacao.url = url;
+    }
+  }
+
+  const { error } = await supabase.from("aula_materiais").update(atualizacao).eq("id", materialId);
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  if (material.tipo === "arquivo" && atualizacao.url) await apagarArquivoMaterial(material.url);
+
+  revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
+  return null;
+}
+
+export async function removerMaterial(materialId: string, cursoId: string, aulaId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const supabase = await createClient();
+  const { data: material } = await supabase
+    .from("aula_materiais")
+    .select("tipo, url")
+    .eq("id", materialId)
+    .single();
+
+  const { error } = await supabase.from("aula_materiais").delete().eq("id", materialId);
+  if (error) return;
+
+  if (material?.tipo === "arquivo") await apagarArquivoMaterial(material.url);
+
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
 }
