@@ -15,7 +15,11 @@ export default async function NovoUsuarioPage() {
 
   return (
     <div>
-      <PageHeader title="Novo usuário" description="Cadastro manual — cria a conta com senha temporária." />
+      <PageHeader
+        title="Novo usuário"
+        description="Cadastro manual — cria a conta com senha temporária."
+        breadcrumb={[{ label: "Usuários e turmas", href: "/admin/usuarios" }, { label: "Novo usuário" }]}
+      />
       <div className="bg-surface rounded-card-lg p-8 shadow-soft max-w-md">
         <NovoUsuarioForm turmas={turmas ?? []} />
       </div>

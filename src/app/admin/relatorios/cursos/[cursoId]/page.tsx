@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { Download, CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import Breadcrumb from "@/design-system/molecules/Breadcrumb";
 import PageHeader from "@/design-system/organisms/PageHeader";
 import ProgressBar from "@/design-system/atoms/ProgressBar";
 import { getRelatorioCursoDetalhado, getNomeCurso } from "@/lib/relatorios";
@@ -31,12 +31,10 @@ export default async function RelatorioCursoPage({
 
   return (
     <div>
-      <Link
-        href="/admin/relatorios"
-        className="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary mb-4"
-      >
-        <ArrowLeft size={16} /> Voltar aos relatórios
-      </Link>
+      <Breadcrumb
+        className="mb-4"
+        items={[{ label: "Relatórios", href: "/admin/relatorios" }, { label: nomeCurso }]}
+      />
 
       <PageHeader
         title={nomeCurso}

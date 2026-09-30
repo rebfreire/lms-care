@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircle2, Lock, PlayCircle, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Lock, PlayCircle } from "lucide-react";
 import ProgressBar from "@/design-system/atoms/ProgressBar";
 import Button from "@/design-system/atoms/Button";
+import Breadcrumb from "@/design-system/molecules/Breadcrumb";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { getTrilhaDoAluno } from "@/lib/trilha";
 import { createClient } from "@/lib/supabase/server";
@@ -31,9 +32,10 @@ export default async function CursoAlunoPage({ params }: { params: Promise<{ id:
 
   return (
     <div>
-      <Link href="/aluno" className="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary mb-4">
-        <ArrowLeft size={16} /> Voltar pra trilha
-      </Link>
+      <Breadcrumb
+        className="mb-4"
+        items={[{ label: "Minha trilha", href: "/aluno" }, { label: curso.nome }]}
+      />
 
       <div className="rounded-card-lg overflow-hidden shadow-soft mb-6 bg-surface">
         <div className="relative">

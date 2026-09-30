@@ -3,6 +3,7 @@ import Button from "@/design-system/atoms/Button";
 import ProgressBar from "@/design-system/atoms/ProgressBar";
 import StatusBadge from "@/design-system/atoms/StatusBadge";
 import StatCard from "@/design-system/molecules/StatCard";
+import Breadcrumb from "@/design-system/molecules/Breadcrumb";
 
 export default function DesignSystemShowcase() {
   return (
@@ -23,6 +24,19 @@ export default function DesignSystemShowcase() {
           <StatCard icon={<Users size={22} />} label="Usuários" value="70" />
           <StatCard icon={<BookOpen size={22} />} label="Trilhas ativas" value="3" variant="primary" />
           <StatCard icon={<GraduationCap size={22} />} label="Certificados emitidos" value="12" variant="accent" />
+        </section>
+
+        <section className="bg-surface rounded-card-lg p-8 shadow-soft space-y-4">
+          <h2 className="text-xl font-headline font-bold text-on-surface">Breadcrumb</h2>
+          <Breadcrumb
+            items={[
+              { label: "Cursos", href: "#" },
+              { label: "Assepsia e Higiene das Mãos", href: "#" },
+              { label: "Introdução à higienização", href: "#" },
+              { label: "Quiz" },
+            ]}
+          />
+          <Breadcrumb items={[{ label: "Cursos", href: "#" }, { label: "Novo curso" }]} />
         </section>
 
         <section className="bg-surface rounded-card-lg p-8 shadow-soft space-y-6">

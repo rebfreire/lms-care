@@ -36,6 +36,7 @@ export default async function CursoDetalhePage({
     <div>
       <PageHeader
         title={curso.nome}
+        breadcrumb={[{ label: "Cursos", href: "/admin/cursos" }, { label: curso.nome }]}
         description={curso.descricao ?? undefined}
         actions={
           <Link

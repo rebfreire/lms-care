@@ -48,6 +48,12 @@ export default async function QuizAlunoPage({ params }: { params: Promise<{ id: 
     <div>
       <PageHeader
         title={quiz.nome}
+        breadcrumb={[
+          { label: "Minha trilha", href: "/aluno" },
+          { label: contexto.curso.nome, href: `/aluno/cursos/${contexto.curso.id}` },
+          { label: contexto.aula.titulo, href: `/aluno/aulas/${aulaId}` },
+          { label: "Quiz" },
+        ]}
         description={`${contexto.aula.titulo} — nota de corte ${quiz.nota_corte}%`}
       />
 

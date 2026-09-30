@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Activity, Gauge, CheckCircle2, LogIn } from "lucide-react";
+import { Activity, Gauge, CheckCircle2, LogIn } from "lucide-react";
+import Breadcrumb from "@/design-system/molecules/Breadcrumb";
 import ProgressBar from "@/design-system/atoms/ProgressBar";
 import { createClient } from "@/lib/supabase/server";
 import { getTrilhaDoAluno } from "@/lib/trilha";
@@ -97,12 +97,10 @@ export default async function FichaAlunoPage({
 
   return (
     <div>
-      <Link
-        href="/admin/relatorios"
-        className="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary mb-4"
-      >
-        <ArrowLeft size={16} /> Voltar aos relatórios
-      </Link>
+      <Breadcrumb
+        className="mb-4"
+        items={[{ label: "Relatórios", href: "/admin/relatorios" }, { label: aluno.nome }]}
+      />
 
       <div className="flex items-center gap-4 mb-6">
         <div className="h-14 w-14 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-lg flex-shrink-0">

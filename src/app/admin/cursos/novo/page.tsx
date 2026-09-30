@@ -4,7 +4,11 @@ import NovoCursoForm from "./NovoCursoForm";
 export default function NovoCursoPage() {
   return (
     <div>
-      <PageHeader title="Novo curso" description="Depois você adiciona módulos e aulas." />
+      <PageHeader
+        title="Novo curso"
+        description="Depois você adiciona módulos e aulas."
+        breadcrumb={[{ label: "Cursos", href: "/admin/cursos" }, { label: "Novo curso" }]}
+      />
       <div className="bg-surface rounded-card-lg p-8 shadow-soft max-w-xl">
         <NovoCursoForm />
       </div>
