@@ -133,15 +133,19 @@ export async function criarModulo(cursoId: string, formData: FormData) {
 
   const supabase = await createClient();
 
-  const { count } = await supabase
+  // max+1 (não count+1): depois de excluir, count deixaria a ordem duplicada.
+  const { data: ultimo } = await supabase
     .from("modulos")
-    .select("id", { count: "exact", head: true })
-    .eq("curso_id", cursoId);
+    .select("ordem")
+    .eq("curso_id", cursoId)
+    .order("ordem", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   await supabase.from("modulos").insert({
     curso_id: cursoId,
     nome,
-    ordem: (count ?? 0) + 1,
+    ordem: (ultimo?.ordem ?? 0) + 1,
   });
 
   revalidatePath(`/admin/cursos/${cursoId}`);
@@ -213,16 +217,19 @@ export async function criarAula(cursoId: string, moduloId: string, formData: For
 
   const supabase = await createClient();
 
-  const { count } = await supabase
+  const { data: ultima } = await supabase
     .from("aulas")
-    .select("id", { count: "exact", head: true })
-    .eq("modulo_id", moduloId);
+    .select("ordem")
+    .eq("modulo_id", moduloId)
+    .order("ordem", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   await supabase.from("aulas").insert({
     modulo_id: moduloId,
     titulo,
     texto_apoio: textoApoio || null,
-    ordem: (count ?? 0) + 1,
+    ordem: (ultima?.ordem ?? 0) + 1,
   });
 
   revalidatePath(`/admin/cursos/${cursoId}`);
@@ -356,4 +363,81 @@ export async function removerMaterial(materialId: string, cursoId: string, aulaI
   if (material?.tipo === "arquivo") await apagarArquivoMaterial(material.url);
 
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
+}
+
+export async function renomearModulo(
+  moduloId: string,
+  cursoId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (!nome) return "Nome é obrigatório.";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("modulos").update({ nome }).eq("id", moduloId);
+  if (error) return `Erro ao salvar: ${error.message}`;
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
+  return null;
+}
+
+// O cascade do banco apaga aulas, materiais, progresso e tentativas, mas não o vídeo
+// no Cloudflare nem os arquivos do bucket — então listamos antes e limpamos depois
+// do delete (se o delete falhar, nada foi perdido).
+async function limparRecursosDasAulas(aulaIds: string[]) {
+  if (aulaIds.length === 0) return null;
+  const supabase = await createClient();
+
+  const [{ data: aulas }, { data: materiais }] = await Promise.all([
+    supabase.from("aulas").select("video_id_cloudflare").in("id", aulaIds),
+    supabase.from("aula_materiais").select("url").in("aula_id", aulaIds).eq("tipo", "arquivo"),
+  ]);
+
+  return {
+    videos: (aulas ?? []).map((a) => a.video_id_cloudflare).filter((v): v is string => !!v),
+    arquivos: (materiais ?? []).map((m) => m.url),
+  };
+}
+
+async function apagarRecursos(recursos: { videos: string[]; arquivos: string[] } | null) {
+  if (!recursos) return;
+  await Promise.allSettled([
+    ...recursos.videos.map((uid) => deleteVideo(uid)),
+    ...recursos.arquivos.map((url) => apagarArquivoMaterial(url)),
+  ]);
+}
+
+export async function excluirAula(aulaId: string, cursoId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const recursos = await limparRecursosDasAulas([aulaId]);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("aulas").delete().eq("id", aulaId).select("id");
+  if (error || !data?.length) return;
+
+  await apagarRecursos(recursos);
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
+}
+
+export async function excluirModulo(moduloId: string, cursoId: string) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return;
+
+  const supabase = await createClient();
+  const { data: aulas } = await supabase.from("aulas").select("id").eq("modulo_id", moduloId);
+  const recursos = await limparRecursosDasAulas((aulas ?? []).map((a) => a.id));
+
+  const { data, error } = await supabase.from("modulos").delete().eq("id", moduloId).select("id");
+  if (error || !data?.length) return;
+
+  await apagarRecursos(recursos);
+
+  revalidatePath(`/admin/cursos/${cursoId}`);
 }
