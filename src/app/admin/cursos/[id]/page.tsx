@@ -8,6 +8,7 @@ import { criarModulo, criarAula } from "../actions";
 import VideoUploader from "./VideoUploader";
 import ModuloHeader from "./ModuloHeader";
 import ExcluirAulaButton from "./ExcluirAulaButton";
+import CapaCursoEditor from "./CapaCursoEditor";
 
 export default async function CursoDetalhePage({
   params,
@@ -19,7 +20,7 @@ export default async function CursoDetalhePage({
 
   const { data: curso } = await supabase
     .from("cursos")
-    .select("id, nome, descricao")
+    .select("id, nome, descricao, capa_url, capa_vertical_url")
     .eq("id", id)
     .single();
 
@@ -47,6 +48,14 @@ export default async function CursoDetalhePage({
       />
 
       <div className="space-y-6">
+        <div className="bg-surface rounded-card-lg p-6 shadow-soft">
+          <h3 className="text-lg font-headline font-bold text-on-surface mb-4">Capas do curso</h3>
+          <div className="grid grid-cols-2 gap-6 max-w-xl">
+            <CapaCursoEditor cursoId={curso.id} tipo="horizontal" urlAtual={curso.capa_url} />
+            <CapaCursoEditor cursoId={curso.id} tipo="vertical" urlAtual={curso.capa_vertical_url} />
+          </div>
+        </div>
+
         {modulos?.map((modulo) => (
           <div key={modulo.id} className="bg-surface rounded-card-lg p-6 shadow-soft">
             <ModuloHeader moduloId={modulo.id} cursoId={curso.id} nome={modulo.nome} />
