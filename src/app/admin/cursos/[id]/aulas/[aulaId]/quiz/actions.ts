@@ -4,24 +4,63 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 
-export async function criarQuiz(aulaId: string, cursoId: string, formData: FormData) {
-  const usuario = await getUsuarioAtual();
-  if (!usuario || usuario.papel !== "admin") return;
+export interface CriarQuizState {
+  error: string | null;
+  valores: { nome: string; nota_corte: string; tentativas_permitidas: string } | null;
+}
 
-  const nome = String(formData.get("nome") ?? "").trim();
-  const notaCorte = Number(formData.get("nota_corte") ?? 70);
-  const tentativas = Number(formData.get("tentativas_permitidas") ?? 3);
-  if (!nome) return;
+function validarConfigQuiz(nome: string, notaCorte: number, tentativas: number): string | null {
+  if (!nome) return "Nome é obrigatório.";
+  if (!Number.isFinite(notaCorte) || notaCorte < 0 || notaCorte > 100) {
+    return "A nota de corte deve estar entre 0 e 100.";
+  }
+  if (!Number.isInteger(tentativas) || tentativas < 1) {
+    return "As tentativas permitidas devem ser um número inteiro maior ou igual a 1.";
+  }
+  return null;
+}
+
+export async function criarQuiz(
+  aulaId: string,
+  cursoId: string,
+  _prevState: CriarQuizState,
+  formData: FormData,
+): Promise<CriarQuizState> {
+  const nomeBruto = String(formData.get("nome") ?? "");
+  const notaBruta = String(formData.get("nota_corte") ?? "");
+  const tentativasBruto = String(formData.get("tentativas_permitidas") ?? "");
+  const valores = { nome: nomeBruto, nota_corte: notaBruta, tentativas_permitidas: tentativasBruto };
+
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return { error: "Sem permissão.", valores };
+
+  const nome = nomeBruto.trim();
+  const notaCorte = notaBruta.trim() === "" ? NaN : Number(notaBruta);
+  const tentativas = tentativasBruto.trim() === "" ? NaN : Number(tentativasBruto);
+  const erroValidacao = validarConfigQuiz(nome, notaCorte, tentativas);
+  if (erroValidacao) return { error: erroValidacao, valores };
 
   const supabase = await createClient();
-  await supabase.from("quizzes").insert({
+
+  const { count } = await supabase
+    .from("quizzes")
+    .select("id", { count: "exact", head: true })
+    .eq("aula_id", aulaId);
+  if (count && count > 0) {
+    return { error: "Essa aula já tem um quiz. Recarregue a página para editá-lo.", valores };
+  }
+
+  const { error } = await supabase.from("quizzes").insert({
     aula_id: aulaId,
     nome,
     nota_corte: notaCorte,
     tentativas_permitidas: tentativas,
   });
 
+  if (error) return { error: `Erro ao criar quiz: ${error.message}`, valores };
+
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/quiz`);
+  return { error: null, valores: null };
 }
 
 export async function atualizarQuizConfig(
@@ -37,7 +76,8 @@ export async function atualizarQuizConfig(
   const nome = String(formData.get("nome") ?? "").trim();
   const notaCorte = Number(formData.get("nota_corte") ?? 70);
   const tentativas = Number(formData.get("tentativas_permitidas") ?? 3);
-  if (!nome) return "Nome é obrigatório.";
+  const erroValidacao = validarConfigQuiz(nome, notaCorte, tentativas);
+  if (erroValidacao) return erroValidacao;
 
   const supabase = await createClient();
   const { error } = await supabase
