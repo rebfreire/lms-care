@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import Button from "@/design-system/atoms/Button";
 import { criarQuestao } from "./actions";
@@ -14,6 +14,7 @@ interface NovaQuestaoFormProps {
 export default function NovaQuestaoForm({ quizId, cursoId, aulaId }: NovaQuestaoFormProps) {
   const [alternativas, setAlternativas] = useState(["", ""]);
   const [correta, setCorreta] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
   const acao = criarQuestao.bind(null, quizId, cursoId, aulaId);
 
   function adicionarAlternativa() {
@@ -25,8 +26,15 @@ export default function NovaQuestaoForm({ quizId, cursoId, aulaId }: NovaQuestao
     setCorreta((atual) => (atual === index ? 0 : atual > index ? atual - 1 : atual));
   }
 
+  function cancelar() {
+    formRef.current?.reset();
+    setAlternativas(["", ""]);
+    setCorreta(0);
+  }
+
   return (
     <form
+      ref={formRef}
       action={acao}
       onSubmit={() => setTimeout(() => setAlternativas(["", ""]), 0)}
       className="bg-surface-container-low rounded-card-lg p-6 space-y-4"
@@ -87,9 +95,14 @@ export default function NovaQuestaoForm({ quizId, cursoId, aulaId }: NovaQuestao
         </button>
       </div>
 
-      <Button type="submit" variant="primary" size="sm">
-        Adicionar questão
-      </Button>
+      <div className="flex gap-2">
+        <Button type="submit" variant="primary" size="sm">
+          Adicionar questão
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={cancelar}>
+          Cancelar
+        </Button>
+      </div>
     </form>
   );
 }
