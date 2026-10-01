@@ -6,6 +6,8 @@ import PageHeader from "@/design-system/organisms/PageHeader";
 import Button from "@/design-system/atoms/Button";
 import { criarModulo, criarAula } from "../actions";
 import VideoUploader from "./VideoUploader";
+import ModuloHeader from "./ModuloHeader";
+import ExcluirAulaButton from "./ExcluirAulaButton";
 
 export default async function CursoDetalhePage({
   params,
@@ -47,9 +49,7 @@ export default async function CursoDetalhePage({
       <div className="space-y-6">
         {modulos?.map((modulo) => (
           <div key={modulo.id} className="bg-surface rounded-card-lg p-6 shadow-soft">
-            <h3 className="text-lg font-headline font-bold text-on-surface mb-4">
-              {modulo.nome}
-            </h3>
+            <ModuloHeader moduloId={modulo.id} cursoId={curso.id} nome={modulo.nome} />
 
             <ul className="space-y-2 mb-5">
               {modulo.aulas
@@ -57,7 +57,7 @@ export default async function CursoDetalhePage({
                 .map((aula) => (
                   <li
                     key={aula.id}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface-container-low"
+                    className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl bg-surface-container-low"
                   >
                     <FileText size={16} className="text-on-surface-variant flex-shrink-0" />
                     <span className="text-sm text-on-surface flex-1">{aula.titulo}</span>
@@ -80,6 +80,7 @@ export default async function CursoDetalhePage({
                     >
                       <ListChecks size={12} /> quiz
                     </Link>
+                    <ExcluirAulaButton aulaId={aula.id} cursoId={curso.id} titulo={aula.titulo} />
                   </li>
                 ))}
               {modulo.aulas?.length === 0 && (
