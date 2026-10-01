@@ -5,6 +5,7 @@ import Link from "next/link";
 import Button from "@/design-system/atoms/Button";
 import FormField from "@/design-system/molecules/FormField";
 import { editarCurso } from "../../actions";
+import CapaCursoEditor from "../CapaCursoEditor";
 
 interface EditarCursoFormProps {
   cursoId: string;
@@ -54,45 +55,8 @@ export default function EditarCursoForm({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
-            Capa horizontal (banner)
-          </label>
-          {capaHorizontalAtual && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={capaHorizontalAtual}
-              alt=""
-              className="w-full aspect-video object-cover rounded-2xl mb-2 bg-surface-container-high"
-            />
-          )}
-          <input
-            type="file"
-            name="capa_horizontal"
-            accept="image/*"
-            className="w-full text-sm text-on-surface-variant file:mr-3 file:rounded-full file:border-0 file:bg-primary-container file:text-on-primary-container file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-widest"
-          />
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
-            Capa vertical (pôster)
-          </label>
-          {capaVerticalAtual && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={capaVerticalAtual}
-              alt=""
-              className="w-full aspect-[2/3] object-cover rounded-2xl mb-2 bg-surface-container-high"
-            />
-          )}
-          <input
-            type="file"
-            name="capa_vertical"
-            accept="image/*"
-            className="w-full text-sm text-on-surface-variant file:mr-3 file:rounded-full file:border-0 file:bg-primary-container file:text-on-primary-container file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-widest"
-          />
-        </div>
+        <CapaCursoEditor cursoId={cursoId} tipo="horizontal" urlAtual={capaHorizontalAtual} />
+        <CapaCursoEditor cursoId={cursoId} tipo="vertical" urlAtual={capaVerticalAtual} />
       </div>
 
       <div className="border-t border-outline-variant pt-5 space-y-4">

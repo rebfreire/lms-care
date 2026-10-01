@@ -8,14 +8,18 @@ import { apagarArquivoPorUrl, arquivoExiste, urlPublicaDoArquivo } from "@/lib/s
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { createDirectUpload, deleteVideo } from "@/lib/cloudflare/stream";
 
-export async function criarCurso(_prevState: string | null, formData: FormData) {
+// Não redireciona: o formulário sobe as capas (upload direto) com o id devolvido
+// e só então navega pro curso.
+export async function criarCurso(
+  nome: string,
+  descricao: string,
+): Promise<{ id: string } | { erro: string }> {
   const usuario = await getUsuarioAtual();
-  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
+  if (!usuario || usuario.papel !== "admin") return { erro: "Sem permissão." };
 
-  const nome = String(formData.get("nome") ?? "").trim();
-  const descricao = String(formData.get("descricao") ?? "").trim();
-
-  if (!nome) return "Nome do curso é obrigatório.";
+  nome = nome.trim();
+  descricao = descricao.trim();
+  if (!nome) return { erro: "Nome do curso é obrigatório." };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -24,9 +28,76 @@ export async function criarCurso(_prevState: string | null, formData: FormData) 
     .select("id")
     .single();
 
-  if (error || !data) return `Erro ao criar curso: ${error?.message ?? "desconhecido"}`;
+  if (error || !data) return { erro: `Erro ao criar curso: ${error?.message ?? "desconhecido"}` };
 
-  redirect(`/admin/cursos/${data.id}`);
+  revalidatePath("/admin/cursos");
+  return { id: data.id };
+}
+
+type TipoCapa = "horizontal" | "vertical";
+const COLUNA_CAPA = { horizontal: "capa_url", vertical: "capa_vertical_url" } as const;
+
+// Confirmação do upload direto: o arquivo já está no bucket `capas`; aqui só aponta
+// a coluna pra ele e apaga o arquivo anterior (senão fica órfão no bucket).
+export async function definirCapaCurso(
+  cursoId: string,
+  tipo: TipoCapa,
+  caminho: string,
+): Promise<{ url: string } | { erro: string }> {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return { erro: "Sem permissão." };
+  if (!caminho.startsWith(`${cursoId}/`)) return { erro: "Caminho de capa inválido." };
+
+  const coluna = COLUNA_CAPA[tipo];
+  const supabase = await createClient();
+  const { data: curso } = await supabase.from("cursos").select(coluna).eq("id", cursoId).single();
+  if (!curso) {
+    await apagarArquivoPorUrl("capas", urlPublicaDoArquivo("capas", caminho));
+    return { erro: "Curso não encontrado." };
+  }
+  const anterior = (curso as Record<string, string | null>)[coluna];
+
+  const url = urlPublicaDoArquivo("capas", caminho);
+  const { error } = await supabase.from("cursos").update({ [coluna]: url }).eq("id", cursoId);
+  if (error) {
+    await apagarArquivoPorUrl("capas", url);
+    return { erro: `Erro ao salvar capa: ${error.message}` };
+  }
+
+  if (anterior && anterior !== url) await apagarArquivoPorUrl("capas", anterior);
+
+  revalidarCurso(cursoId);
+  return { url };
+}
+
+export async function removerCapaCurso(
+  cursoId: string,
+  tipo: TipoCapa,
+): Promise<{ ok: true } | { erro: string }> {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return { erro: "Sem permissão." };
+
+  const coluna = COLUNA_CAPA[tipo];
+  const supabase = await createClient();
+  const { data: curso } = await supabase.from("cursos").select(coluna).eq("id", cursoId).single();
+  if (!curso) return { erro: "Curso não encontrado." };
+  const anterior = (curso as Record<string, string | null>)[coluna];
+
+  const { error } = await supabase.from("cursos").update({ [coluna]: null }).eq("id", cursoId);
+  if (error) return { erro: `Erro ao remover capa: ${error.message}` };
+
+  if (anterior) await apagarArquivoPorUrl("capas", anterior);
+
+  revalidarCurso(cursoId);
+  return { ok: true };
+}
+
+function revalidarCurso(cursoId: string) {
+  revalidatePath("/admin/cursos");
+  revalidatePath(`/admin/cursos/${cursoId}`);
+  revalidatePath(`/admin/cursos/${cursoId}/editar`);
+  revalidatePath("/aluno");
+  revalidatePath(`/aluno/cursos/${cursoId}`);
 }
 
 export async function editarCurso(cursoId: string, _prevState: string | null, formData: FormData) {
@@ -41,8 +112,6 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
   const assinanteCargo = String(formData.get("assinante_cargo") ?? "").trim();
   if (!nome) return "Nome do curso é obrigatório.";
 
-  const capaHorizontal = formData.get("capa_horizontal") as File | null;
-  const capaVertical = formData.get("capa_vertical") as File | null;
   const assinaturaArquivo = formData.get("assinatura") as File | null;
 
   // Storage tem RLS própria — usa admin pra essa escrita, mesma checagem de
@@ -56,24 +125,6 @@ export async function editarCurso(cursoId: string, _prevState: string | null, fo
     certificado_assinante_registro: assinanteRegistro || null,
     certificado_assinante_cargo: assinanteCargo || null,
   };
-
-  if (capaHorizontal && capaHorizontal.size > 0) {
-    const caminho = `${cursoId}/horizontal-${Date.now()}.${capaHorizontal.name.split(".").pop()}`;
-    const { error: erroUpload } = await admin.storage
-      .from("capas")
-      .upload(caminho, capaHorizontal, { upsert: true, contentType: capaHorizontal.type });
-    if (erroUpload) return `Erro ao enviar capa horizontal: ${erroUpload.message}`;
-    atualizacao.capa_url = admin.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
-  }
-
-  if (capaVertical && capaVertical.size > 0) {
-    const caminho = `${cursoId}/vertical-${Date.now()}.${capaVertical.name.split(".").pop()}`;
-    const { error: erroUpload } = await admin.storage
-      .from("capas")
-      .upload(caminho, capaVertical, { upsert: true, contentType: capaVertical.type });
-    if (erroUpload) return `Erro ao enviar capa vertical: ${erroUpload.message}`;
-    atualizacao.capa_vertical_url = admin.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
-  }
 
   if (assinaturaArquivo && assinaturaArquivo.size > 0) {
     const caminho = `${cursoId}.${assinaturaArquivo.name.split(".").pop()}`;
@@ -394,7 +445,7 @@ async function apagarRecursos(recursos: { videos: string[]; arquivos: string[] }
   if (!recursos) return;
   await Promise.allSettled([
     ...recursos.videos.map((uid) => deleteVideo(uid)),
-    ...recursos.arquivos.map((url) => apagarArquivoMaterial(url)),
+    ...recursos.arquivos.map((url) => apagarArquivoPorUrl("materiais", url)),
   ]);
 }
 

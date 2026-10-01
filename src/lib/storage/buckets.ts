@@ -9,6 +9,8 @@ export interface BucketConfig {
 
 export const BUCKETS = {
   materiais: { maxBytes: 50 * 1024 * 1024 },
+  // Mesmos tipos que o bucket `capas` aceita no Supabase (allowed_mime_types).
+  capas: { maxBytes: 10 * 1024 * 1024, tiposAceitos: ["image/jpeg", "image/png", "image/webp"] },
 } satisfies Record<string, BucketConfig>;
 
 export type BucketNome = keyof typeof BUCKETS;
@@ -22,7 +24,9 @@ export function validarArquivo(bucket: BucketNome, arquivo: File): string | null
     return `O arquivo tem ${tamanhoMb} MB e o limite é ${limiteMb} MB.`;
   }
   if (config.tiposAceitos && !config.tiposAceitos.some((t) => arquivo.type.startsWith(t))) {
-    return "Tipo de arquivo não aceito.";
+    return bucket === "capas"
+      ? "Formato não suportado. Use uma imagem JPG, PNG ou WebP."
+      : "Tipo de arquivo não aceito.";
   }
   return null;
 }
