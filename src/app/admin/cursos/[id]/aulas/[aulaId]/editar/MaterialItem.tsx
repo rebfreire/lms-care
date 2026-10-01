@@ -3,6 +3,9 @@
 import { useActionState, useState } from "react";
 import { FileText, Link2, Pencil, Trash2 } from "lucide-react";
 import Button from "@/design-system/atoms/Button";
+import ProgressBar from "@/design-system/atoms/ProgressBar";
+import { enviarArquivoDireto } from "@/lib/storage/upload-direto-client";
+import { validarArquivo } from "@/lib/storage/buckets";
 import { editarMaterial, removerMaterial } from "../../../../actions";
 
 export interface Material {
@@ -25,8 +28,27 @@ export default function MaterialItem({
   aulaId: string;
 }) {
   const [modo, setModo] = useState<"ver" | "editar" | "excluir">("ver");
+  const [progresso, setProgresso] = useState<number | null>(null);
   const [erro, formAction, isPending] = useActionState(
     async (prev: string | null, formData: FormData) => {
+      // O arquivo novo vai direto pro Storage; o Server Action recebe só o caminho.
+      const arquivo = formData.get("arquivo");
+      formData.delete("arquivo");
+      if (arquivo instanceof File && arquivo.size > 0) {
+        const invalido = validarArquivo("materiais", arquivo);
+        if (invalido) return invalido;
+        setProgresso(0);
+        try {
+          formData.set(
+            "caminho_novo",
+            await enviarArquivoDireto("materiais", aulaId, arquivo, setProgresso),
+          );
+        } catch (err) {
+          return err instanceof Error ? err.message : "Erro ao enviar o arquivo novo.";
+        } finally {
+          setProgresso(null);
+        }
+      }
       const resultado = await editarMaterial(material.id, cursoId, aulaId, prev, formData);
       // Sem erro: fecha o formulário (a lista já vem atualizada pelo revalidatePath).
       if (!resultado) setModo("ver");
@@ -68,13 +90,15 @@ export default function MaterialItem({
             </div>
           )}
 
+          {progresso !== null && <ProgressBar value={progresso} label="Enviando arquivo" />}
+
           {erro && (
-            <p className="text-sm text-error bg-error-container/40 rounded-xl px-4 py-2">{erro}</p>
+            <p role="alert" className="text-sm text-error bg-error-container/40 rounded-xl px-4 py-2">{erro}</p>
           )}
 
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={isPending}>
-              {isPending ? "Salvando..." : "Salvar"}
+              {progresso !== null ? `Enviando ${progresso}%` : isPending ? "Salvando..." : "Salvar"}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setModo("ver")}>
               Cancelar

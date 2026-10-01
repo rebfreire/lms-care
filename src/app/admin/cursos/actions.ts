@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { apagarArquivoPorUrl, arquivoExiste, urlPublicaDoArquivo } from "@/lib/storage/arquivos";
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { createDirectUpload, deleteVideo } from "@/lib/cloudflare/stream";
 
@@ -228,29 +229,36 @@ export async function criarAula(cursoId: string, moduloId: string, formData: For
   revalidatePath(`/admin/cursos/${cursoId}`);
 }
 
-export async function adicionarMaterialArquivo(
+// O arquivo já foi enviado direto pro Storage pelo navegador (ver lib/storage/upload-direto);
+// aqui só confirmamos que ele existe e registramos no banco.
+export async function confirmarMaterialArquivo(
   aulaId: string,
   cursoId: string,
-  formData: FormData,
-) {
+  caminho: string,
+  nome: string,
+): Promise<string | null> {
   const usuario = await getUsuarioAtual();
-  if (!usuario || usuario.papel !== "admin") return;
+  if (!usuario || usuario.papel !== "admin") return "Sem permissão.";
 
-  const arquivo = formData.get("arquivo") as File | null;
-  if (!arquivo || arquivo.size === 0) return;
+  const erroCaminho = await validarCaminhoMaterial(aulaId, caminho);
+  if (erroCaminho) return erroCaminho;
 
-  const url = await enviarArquivoMaterial(aulaId, arquivo);
-  if (!url) return;
-
-  const supabase = await createClient();
-  await supabase.from("aula_materiais").insert({
+  const { error } = await (await createClient()).from("aula_materiais").insert({
     aula_id: aulaId,
     tipo: "arquivo",
-    nome: arquivo.name,
-    url,
+    nome: nome.trim() || "Arquivo",
+    url: urlPublicaDoArquivo("materiais", caminho),
   });
+  if (error) return `Erro ao salvar o material: ${error.message}`;
 
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
+  return null;
+}
+
+async function validarCaminhoMaterial(aulaId: string, caminho: string) {
+  if (!caminho.startsWith(`${aulaId}/`) || caminho.includes("..")) return "Arquivo inválido.";
+  if (!(await arquivoExiste("materiais", caminho))) return "O arquivo não chegou ao armazenamento. Tente enviar de novo.";
+  return null;
 }
 
 export async function adicionarMaterialLink(aulaId: string, cursoId: string, formData: FormData) {
@@ -270,28 +278,6 @@ export async function adicionarMaterialLink(aulaId: string, cursoId: string, for
   });
 
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
-}
-
-async function enviarArquivoMaterial(aulaId: string, arquivo: File): Promise<string | null> {
-  const admin = createAdminClient();
-  const caminho = `${aulaId}/${Date.now()}-${arquivo.name}`;
-
-  const { error } = await admin.storage
-    .from("materiais")
-    .upload(caminho, arquivo, { contentType: arquivo.type });
-
-  if (error) return null;
-  return admin.storage.from("materiais").getPublicUrl(caminho).data.publicUrl;
-}
-
-// A URL pública tem o formato .../storage/v1/object/public/materiais/<caminho>.
-// Best-effort: se não achar/apagar o arquivo, o registro já saiu do banco mesmo assim.
-async function apagarArquivoMaterial(url: string) {
-  const marcador = "/object/public/materiais/";
-  const i = url.indexOf(marcador);
-  if (i === -1) return;
-  const caminho = decodeURIComponent(url.slice(i + marcador.length));
-  await createAdminClient().storage.from("materiais").remove([caminho]);
 }
 
 export async function editarMaterial(
@@ -322,18 +308,19 @@ export async function editarMaterial(
     if (!url) return "URL é obrigatória.";
     atualizacao.url = url;
   } else {
-    const arquivo = formData.get("arquivo") as File | null;
-    if (arquivo && arquivo.size > 0) {
-      const url = await enviarArquivoMaterial(aulaId, arquivo);
-      if (!url) return "Erro ao enviar o arquivo novo.";
-      atualizacao.url = url;
+    // Arquivo novo (opcional): o navegador já enviou direto pro Storage e manda só o caminho.
+    const caminhoNovo = String(formData.get("caminho_novo") ?? "").trim();
+    if (caminhoNovo) {
+      const erroCaminho = await validarCaminhoMaterial(aulaId, caminhoNovo);
+      if (erroCaminho) return erroCaminho;
+      atualizacao.url = urlPublicaDoArquivo("materiais", caminhoNovo);
     }
   }
 
   const { error } = await supabase.from("aula_materiais").update(atualizacao).eq("id", materialId);
   if (error) return `Erro ao salvar: ${error.message}`;
 
-  if (material.tipo === "arquivo" && atualizacao.url) await apagarArquivoMaterial(material.url);
+  if (material.tipo === "arquivo" && atualizacao.url) await apagarArquivoPorUrl("materiais", material.url);
 
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
   return null;
@@ -353,7 +340,7 @@ export async function removerMaterial(materialId: string, cursoId: string, aulaI
   const { error } = await supabase.from("aula_materiais").delete().eq("id", materialId);
   if (error) return;
 
-  if (material?.tipo === "arquivo") await apagarArquivoMaterial(material.url);
+  if (material?.tipo === "arquivo") await apagarArquivoPorUrl("materiais", material.url);
 
   revalidatePath(`/admin/cursos/${cursoId}/aulas/${aulaId}/editar`);
 }
