@@ -1,5 +1,6 @@
 import Button from "@/design-system/atoms/Button";
-import { adicionarMaterialArquivo, adicionarMaterialLink } from "../../../../actions";
+import { adicionarMaterialLink } from "../../../../actions";
+import MaterialUploader from "./MaterialUploader";
 import MaterialItem, { type Material } from "./MaterialItem";
 
 interface MateriaisSectionProps {
@@ -23,20 +24,7 @@ export default function MateriaisSection({ cursoId, aulaId, materiais }: Materia
         </ul>
       )}
 
-      <form
-        action={adicionarMaterialArquivo.bind(null, aulaId, cursoId)}
-        className="flex flex-wrap items-center gap-2"
-      >
-        <input
-          type="file"
-          name="arquivo"
-          required
-          className="flex-1 min-w-[200px] text-sm text-on-surface-variant file:mr-3 file:rounded-pill file:border-0 file:bg-surface-container-high file:px-3 file:py-1.5 file:text-xs file:font-semibold"
-        />
-        <Button type="submit" size="sm" variant="secondary">
-          Anexar arquivo
-        </Button>
-      </form>
+      <MaterialUploader cursoId={cursoId} aulaId={aulaId} />
 
       <form
         action={adicionarMaterialLink.bind(null, aulaId, cursoId)}
