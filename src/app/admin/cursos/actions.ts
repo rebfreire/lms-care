@@ -445,7 +445,7 @@ async function apagarRecursos(recursos: { videos: string[]; arquivos: string[] }
   if (!recursos) return;
   await Promise.allSettled([
     ...recursos.videos.map((uid) => deleteVideo(uid)),
-    ...recursos.arquivos.map((url) => apagarArquivoMaterial(url)),
+    ...recursos.arquivos.map((url) => apagarArquivoPorUrl("materiais", url)),
   ]);
 }
 
