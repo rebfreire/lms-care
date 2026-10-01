@@ -23,7 +23,10 @@ export default async function EditarUsuarioPage({
 
   return (
     <div>
-      <PageHeader title={`Editar: ${alvo.nome}`} />
+      <PageHeader
+        title={`Editar: ${alvo.nome}`}
+        breadcrumb={[{ label: "Usuários e turmas", href: "/admin/usuarios" }, { label: alvo.nome }, { label: "Editar" }]}
+      />
       <div className="bg-surface rounded-card-lg p-8 shadow-soft max-w-md">
         <EditarUsuarioForm
           usuarioId={alvo.id}

@@ -11,6 +11,7 @@ import {
 import { getUsuarioAtual } from "@/lib/supabase/auth";
 import { getAulaComContexto } from "@/lib/trilha";
 import { createClient } from "@/lib/supabase/server";
+import Breadcrumb from "@/design-system/molecules/Breadcrumb";
 import AulaPlayer from "./AulaPlayer";
 import ListaConteudo from "./ListaConteudo";
 
@@ -36,10 +37,14 @@ export default async function AulaPage({ params }: { params: Promise<{ id: strin
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <Link href={`/aluno/cursos/${curso.id}`} className="text-sm text-on-surface-variant hover:text-primary">
-          ← Voltar pro curso
-        </Link>
-        <div className="flex gap-2">
+        <Breadcrumb
+          items={[
+            { label: "Minha trilha", href: "/aluno" },
+            { label: curso.nome, href: `/aluno/cursos/${curso.id}` },
+            { label: aula.titulo },
+          ]}
+        />
+        <div className="flex gap-2 flex-shrink-0 ml-3">
           {anterior && (
             <Link
               href={`/aluno/aulas/${anterior.id}`}

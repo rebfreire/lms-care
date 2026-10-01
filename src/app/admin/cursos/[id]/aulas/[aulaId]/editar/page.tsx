@@ -22,7 +22,7 @@ export default async function EditarAulaPage({
   const usuario = await getUsuarioAtual();
   const supabase = await createClient();
 
-  const [{ data: aula }, { data: materiais }, { data: turmas }] = await Promise.all([
+  const [{ data: aula }, { data: materiais }, { data: turmas }, { data: curso }] = await Promise.all([
     supabase
       .from("aulas")
       .select("id, titulo, texto_apoio, liberacao_agendada_em, turma_id, video_id_cloudflare")
@@ -34,13 +34,22 @@ export default async function EditarAulaPage({
       .eq("aula_id", aulaId)
       .order("nome"),
     supabase.from("turmas").select("id, nome").eq("empresa_id", usuario!.empresaId).order("nome"),
+    supabase.from("cursos").select("nome").eq("id", cursoId).single(),
   ]);
 
   if (!aula) notFound();
 
   return (
     <div>
-      <PageHeader title="Editar aula" />
+      <PageHeader
+        title="Editar aula"
+        breadcrumb={[
+          { label: "Cursos", href: "/admin/cursos" },
+          { label: curso?.nome ?? "Curso", href: `/admin/cursos/${cursoId}` },
+          { label: aula.titulo },
+          { label: "Editar" },
+        ]}
+      />
       <div className="bg-surface rounded-card-lg p-8 shadow-soft max-w-xl">
         <EditarAulaForm
           cursoId={cursoId}

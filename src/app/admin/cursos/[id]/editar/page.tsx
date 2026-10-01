@@ -19,7 +19,14 @@ export default async function EditarCursoPage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <PageHeader title="Editar curso" />
+      <PageHeader
+        title="Editar curso"
+        breadcrumb={[
+          { label: "Cursos", href: "/admin/cursos" },
+          { label: curso.nome, href: `/admin/cursos/${curso.id}` },
+          { label: "Editar" },
+        ]}
+      />
       <div className="bg-surface rounded-card-lg p-8 shadow-soft max-w-xl">
         <EditarCursoForm
           cursoId={curso.id}

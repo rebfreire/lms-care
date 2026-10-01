@@ -22,6 +22,14 @@ export default async function QuizAulaPage({
 
   if (!aula) notFound();
 
+  const { data: curso } = await supabase.from("cursos").select("nome").eq("id", cursoId).single();
+  const caminho = [
+    { label: "Cursos", href: "/admin/cursos" },
+    { label: curso?.nome ?? "Curso", href: `/admin/cursos/${cursoId}` },
+    { label: aula.titulo },
+    { label: "Quiz" },
+  ];
+
   const { data: quiz } = await supabase
     .from("quizzes")
     .select("id, nome, nota_corte, tentativas_permitidas")
@@ -33,7 +41,11 @@ export default async function QuizAulaPage({
   if (!quiz) {
     return (
       <div>
-        <PageHeader title={`Quiz — ${aula.titulo}`} description="Ainda não existe quiz para essa aula." />
+        <PageHeader
+          title={`Quiz — ${aula.titulo}`}
+          description="Ainda não existe quiz para essa aula."
+          breadcrumb={caminho}
+        />
         <CriarQuizForm aulaId={aulaId} cursoId={cursoId} />
       </div>
     );
@@ -49,6 +61,7 @@ export default async function QuizAulaPage({
     <div>
       <PageHeader
         title={quiz.nome}
+        breadcrumb={caminho}
         description={`${aula.titulo} — nota de corte ${quiz.nota_corte}% · ${quiz.tentativas_permitidas} tentativa(s)`}
       />
 
