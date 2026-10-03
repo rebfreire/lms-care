@@ -74,7 +74,7 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex flex-col p-4 h-screen w-72 bg-surface-bright shadow-soft-lg overflow-hidden transition-transform duration-200 lg:h-[calc(100vh-1.5rem)] lg:w-64 lg:m-3 lg:rounded-card-lg lg:bg-surface-bright/80 lg:backdrop-blur-xl lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 flex flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] h-dvh w-72 bg-surface-bright shadow-soft-lg overflow-hidden transition-transform duration-200 lg:h-[calc(100dvh-1.5rem)] lg:w-64 lg:m-3 lg:rounded-card-lg lg:bg-surface-bright/80 lg:backdrop-blur-xl lg:translate-x-0 ${
           aberto ? "translate-x-0" : "-translate-x-full"
         }`}
       >
